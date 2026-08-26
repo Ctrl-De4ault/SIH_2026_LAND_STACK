@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land Stack — Product Requirements Document | SIH 2026</title>
+<style>
+  :root{
+    color-scheme: light;
+    /* Cadastral Blueprint palette */
+    --paper:#F5F7F3;
+    --paper-2:#FFFFFF;
+    --ink:#0B2A26;
+    --ink-soft:#40534E;
+    --pine:#103A34;
+    --pine-deep:#082220;
+    --survey:#1F8A70;
+    --survey-bright:#26A883;
+    --ochre:#C9942B;
+    --ochre-soft:#EBCB7C;
+    --line:#D3DBD4;
+    --line-2:#E3E9E3;
+    --coral:#CF4F38;
+    --mist:#EAF0EB;
+    --shadow: 0 1px 2px rgba(8,34,32,.06), 0 8px 24px rgba(8,34,32,.06);
+    --shadow-lg: 0 24px 60px rgba(8,34,32,.16);
+    --font-display:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-body:'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --wrap:1200px;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.62;
+    font-size:16.5px;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3,h4{font-family:var(--font-display);line-height:1.14;letter-spacing:-.012em;font-weight:600;color:var(--ink)}
+  p{margin:0 0 1em}
+  a{color:var(--survey);text-decoration:none}
+  a:hover{text-decoration:underline}
+  strong{font-weight:600}
+  code,.mono{font-family:var(--font-mono)}
+  ::selection{background:var(--ochre-soft);color:var(--ink)}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    background:
+      radial-gradient(1200px 600px at 78% -10%, rgba(38,168,131,.20), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(201,148,43,.12), transparent 55%),
+      linear-gradient(180deg,#0A2A26 0%, #082220 100%);
+    color:#EAF3EE;
+    overflow:hidden;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .hero .cadastre{
+    position:absolute;inset:0;opacity:.16;pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;z-index:2;
+    max-width:var(--wrap);margin:0 auto;
+    padding:64px 40px 72px;
+    display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ochre-soft);margin:0 0 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--survey-bright);box-shadow:0 0 0 4px rgba(38,168,131,.18)}
+  .hero h1{
+    font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.03em;margin:0 0 20px;color:#fff;line-height:1.02;
+  }
+  .hero h1 .accent{
+    background:linear-gradient(120deg,var(--survey-bright),var(--ochre-soft));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero .lede{font-size:19px;color:#C7D8D1;max-width:46ch;margin:0 0 28px}
+  .hero .meta{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;max-width:520px;
+  }
+  .hero .meta div{background:rgba(9,38,35,.55);padding:12px 16px}
+  .hero .meta dt{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#8FB2A8;margin:0 0 3px}
+  .hero .meta dd{margin:0;font-size:14.5px;color:#E7F1EC;font-weight:500}
+
+  /* Signature: layered parcel stack */
+  .stack-wrap{position:relative;height:360px;perspective:1400px}
+  .plate{
+    position:absolute;left:50%;width:340px;height:210px;border-radius:14px;
+    transform-style:preserve-3d;
+    border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 30px 50px rgba(0,0,0,.35);
+    padding:16px 18px;overflow:hidden;
+    transition:transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .plate .plabel{position:relative;z-index:3;font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .plate .pnum{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1;position:relative;z-index:3}
+  .plate .pdesc{position:relative;z-index:3;font-size:12.5px;margin-top:6px;max-width:24ch}
+  .plate .grid-bg{position:absolute;inset:0;opacity:.5;z-index:1}
+  .plate.base{
+    background:linear-gradient(135deg,#0E4E43,#0B3B33);color:#DCEFE8;
+    transform:translate(-50%,150px) rotateX(52deg) rotateZ(-42deg);
+  }
+  .plate.essential{
+    background:linear-gradient(135deg,#1F8A70,#166B57);color:#EAF7F1;
+    transform:translate(-50%,90px) rotateX(52deg) rotateZ(-42deg);
+  }
+  .plate.usecase{
+    background:linear-gradient(135deg,#D6A63A,#BD8420);color:#2A1E05;
+    transform:translate(-50%,30px) rotateX(52deg) rotateZ(-42deg);
+  }
+  .stack-wrap:hover .plate.base{transform:translate(-50%,168px) rotateX(52deg) rotateZ(-42deg)}
+  .stack-wrap:hover .plate.usecase{transform:translate(-50%,12px) rotateX(52deg) rotateZ(-42deg)}
+  .stack-caption{position:absolute;bottom:-8px;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:#8FB2A8}
+
+  /* ---------- LAYOUT ---------- */
+  .shell{max-width:var(--wrap);margin:0 auto;padding:0 40px;display:grid;grid-template-columns:236px 1fr;gap:56px;align-items:start}
+  nav.toc{position:sticky;top:0;max-height:100vh;overflow:auto;padding:40px 0 40px;font-size:13.5px}
+  nav.toc .toc-title{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;padding-left:14px}
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:toc}
+  nav.toc li{counter-increment:toc}
+  nav.toc a{
+    display:block;color:var(--ink-soft);padding:5px 12px 5px 14px;border-left:2px solid transparent;
+    transition:all .15s;line-height:1.35;text-decoration:none;
+  }
+  nav.toc a:hover{color:var(--ink);border-left-color:var(--line);background:var(--mist)}
+  nav.toc a::before{content:counter(toc,decimal-leading-zero);font-family:var(--font-mono);font-size:10.5px;color:var(--survey);margin-right:8px}
+  main{padding:56px 0 96px;min-width:0}
+
+  section{margin:0 0 66px;scroll-margin-top:24px}
+  .kicker{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--survey);display:flex;align-items:center;gap:10px;margin:0 0 14px}
+  .kicker .idx{color:var(--ochre);font-weight:600}
+  h2{font-size:clamp(26px,3.4vw,36px);margin:0 0 18px}
+  h3{font-size:20px;margin:34px 0 12px;color:var(--pine)}
+  h4{font-size:15.5px;margin:20px 0 8px;font-family:var(--font-body);font-weight:700;color:var(--ink)}
+  .lead{font-size:18.5px;color:var(--ink-soft);max-width:70ch}
+
+  /* cards / callouts */
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow)}
+  .grid{display:grid;gap:18px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+  .feature{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);position:relative}
+  .feature .tag{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--survey);font-weight:600}
+  .feature h4{margin:8px 0 6px;font-family:var(--font-display);font-size:17px}
+  .feature p{font-size:14.5px;color:var(--ink-soft);margin:0}
+
+  .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:4px 11px;border-radius:999px;background:var(--mist);color:var(--pine);border:1px solid var(--line);text-transform:uppercase}
+  .pill.ochre{background:#FBF3DE;color:#7A5A0F;border-color:#EBD9A8}
+  .pill.coral{background:#FBE9E5;color:#8F2E1C;border-color:#F0C9C1}
+
+  blockquote{margin:22px 0;padding:16px 22px;border-left:3px solid var(--ochre);background:linear-gradient(90deg,#FBF6E8,transparent);border-radius:0 10px 10px 0;color:var(--ink);font-size:16px}
+  blockquote p{margin:0}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--paper-2)}
+  th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line-2);vertical-align:top}
+  thead th{background:var(--pine);color:#EAF3EE;font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:.02em;position:sticky;top:0}
+  tbody tr:nth-child(even){background:var(--mist)}
+  tbody tr:last-child td{border-bottom:none}
+  td.yes{color:var(--survey);font-weight:600}
+  td.no{color:var(--coral);font-weight:600}
+  .cmp th:first-child{width:210px}
+  .cmp td:first-child{font-weight:600;color:var(--pine);font-family:var(--font-display)}
+
+  /* diff cards */
+  .diff{display:grid;grid-template-columns:44px 1fr;gap:16px;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:var(--paper-2);box-shadow:var(--shadow)}
+  .diff .n{font-family:var(--font-display);font-weight:700;font-size:22px;color:#fff;background:var(--survey);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+  .diff h4{margin:0 0 4px;font-family:var(--font-display);font-size:18px}
+  .diff .bhu{font-size:13px;color:var(--coral);margin:8px 0 0;font-family:var(--font-mono)}
+  .diff p{font-size:14.5px;color:var(--ink-soft);margin:0}
+
+  /* lists */
+  ul.clean{list-style:none;margin:12px 0;padding:0}
+  ul.clean li{position:relative;padding:5px 0 5px 26px;font-size:15px;color:var(--ink-soft)}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:13px;width:8px;height:8px;border:2px solid var(--survey);border-radius:2px;transform:rotate(45deg)}
+  ol.steps{counter-reset:step;list-style:none;margin:14px 0;padding:0}
+  ol.steps li{counter-increment:step;position:relative;padding:8px 0 8px 44px;font-size:15px;color:var(--ink-soft);border-bottom:1px dashed var(--line-2)}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(step);position:absolute;left:0;top:8px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--survey);background:var(--mist);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+
+  /* persona */
+  .persona{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper-2);box-shadow:var(--shadow)}
+  .persona .top{background:var(--mist);padding:14px 18px;border-bottom:1px solid var(--line)}
+  .persona .top h4{margin:0;font-family:var(--font-display);font-size:16px}
+  .persona .top .role{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--survey);text-transform:uppercase}
+  .persona .body{padding:14px 18px;font-size:14px;color:var(--ink-soft)}
+  .persona .body .lbl{font-weight:600;color:var(--ink);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;margin-top:10px}
+
+  /* architecture */
+  .arch{background:var(--pine-deep);border-radius:16px;padding:26px;color:#DCEFE8;box-shadow:var(--shadow-lg)}
+  .arch .row{display:grid;gap:12px;margin-bottom:12px}
+  .arch .tier{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.04)}
+  .arch .tier .tname{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ochre-soft);margin-bottom:10px}
+  .arch .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .arch .chip{font-size:12.5px;font-family:var(--font-mono);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;color:#EAF7F1}
+  .arch .chip.hl{background:rgba(38,168,131,.22);border-color:rgba(38,168,131,.5)}
+  .arch .chip.oc{background:rgba(201,148,43,.20);border-color:rgba(201,148,43,.5);color:#F6E6BE}
+  .arch .flow{text-align:center;color:#6F9488;font-size:18px;margin:2px 0}
+
+  /* code */
+  pre{background:var(--pine-deep);color:#DCEFE8;border-radius:12px;padding:18px 20px;overflow-x:auto;font-family:var(--font-mono);font-size:13px;line-height:1.6;border:1px solid rgba(255,255,255,.08)}
+  pre .k{color:#7FD8BE}
+  pre .s{color:#EBCB7C}
+  pre .c{color:#6E8B84;font-style:italic}
+  code.inline{background:var(--mist);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13.5px;color:var(--pine)}
+
+  /* swatches */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+  .sw{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper-2);box-shadow:var(--shadow)}
+  .sw .chip{height:60px}
+  .sw .meta{padding:8px 10px}
+  .sw .nm{font-size:12.5px;font-weight:600}
+  .sw .hx{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)}
+
+  /* roadmap */
+  .road{position:relative;margin:20px 0;padding-left:26px}
+  .road::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--survey),var(--ochre))}
+  .phase{position:relative;margin-bottom:22px}
+  .phase::before{content:"";position:absolute;left:-24px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid var(--survey)}
+  .phase h4{margin:0 0 4px;font-family:var(--font-display);font-size:17px}
+  .phase .when{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;color:var(--ochre);text-transform:uppercase}
+  .phase p{font-size:14.5px;color:var(--ink-soft);margin:6px 0 0}
+
+  .divider{height:1px;background:var(--line);border:none;margin:0 0 56px}
+  .note{font-size:13px;color:var(--ink-soft);font-style:italic}
+
+  footer{background:var(--pine-deep);color:#9DBDB3;padding:40px;text-align:center;font-size:13.5px}
+  footer .mono{color:#6F9488}
+
+  /* responsive */
+  @media(max-width:960px){
+    .hero-inner{grid-template-columns:1fr;padding:44px 24px 56px}
+    .stack-wrap{height:320px;margin-top:20px}
+    .shell{grid-template-columns:1fr;padding:0 24px;gap:0}
+    nav.toc{display:none}
+    main{padding:36px 0 64px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{transition:none!important;scroll-behavior:auto!important}
+  }
+  @media print{
+    nav.toc{display:none}
+    .shell{grid-template-columns:1fr;padding:0 12mm}
+    .hero{background:#082220!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    section{page-break-inside:avoid}
+    body{font-size:11pt}
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= HERO ======================= -->
+<header class="hero">
+  <svg class="cadastre" viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g fill="none" stroke="#7FD8BE" stroke-width="1">
+      <path d="M0 120 L220 90 L360 160 L340 300 L160 340 L40 260 Z"/>
+      <path d="M360 160 L520 110 L620 210 L540 330 L340 300 Z"/>
+      <path d="M620 210 L780 150 L900 240 L820 380 L640 360 L540 330 Z"/>
+      <path d="M900 240 L1060 180 L1200 260 L1160 420 L980 420 L820 380 Z"/>
+      <path d="M40 260 L160 340 L120 460 L0 440 Z"/>
+      <path d="M340 300 L540 330 L500 470 L300 460 L160 340 Z"/>
+      <path d="M820 380 L980 420 L960 500 L720 500 L640 360 Z"/>
+      <line x1="220" y1="90" x2="200" y2="0"/>
+      <line x1="520" y1="110" x2="560" y2="0"/>
+      <line x1="780" y1="150" x2="820" y2="0"/>
+      <line x1="1060" y1="180" x2="1090" y2="0"/>
+    </g>
+    <g fill="#EBCB7C">
+      <circle cx="360" cy="160" r="3"/><circle cx="620" cy="210" r="3"/>
+      <circle cx="900" cy="240" r="3"/><circle cx="340" cy="300" r="3"/>
+      <circle cx="820" cy="380" r="3"/><circle cx="540" cy="330" r="3"/>
+    </g>
+  </svg>
+  <div class="hero-inner">
+    <div>
+      <p class="eyebrow"><span class="dot"></span> Smart India Hackathon 2026 · Product Requirements Document</p>
+      <h1>Land <span class="accent">Stack</span></h1>
+      <p class="lede">A parcel-centric, GIS-native Digital Public Infrastructure that unifies India's fragmented land datasets, departments, and citizen services around a single georeferenced identity — the ULPIN.</p>
+      <dl class="meta">
+        <div><dt>Deliverable</dt><dd>Functional prototype + standard technical document</dd></div>
+        <div><dt>Owning body</dt><dd>Dept. of Land Resources, MoRD</dd></div>
+        <div><dt>Core stack</dt><dd>MERN + PostGIS / GeoServer / MapLibre</dd></div>
+        <div><dt>Version</dt><dd>1.0 · August 2026 · Team [Your Team]</dd></div>
+      </dl>
+    </div>
+    <div class="stack-wrap" aria-hidden="true">
+      <div class="plate base">
+        <svg class="grid-bg" viewBox="0 0 340 210"><g fill="none" stroke="#7FD8BE" stroke-width="1" opacity=".5"><path d="M20 40 L140 20 L200 70 L120 120 L30 100Z"/><path d="M200 70 L300 40 L320 130 L220 160 L120 120Z"/><path d="M30 100 L120 120 L100 190 L20 180Z"/></g></svg>
+        <div class="pnum">01</div>
+        <div class="plabel">Base Layer</div>
+        <div class="pdesc">Georeferenced cadastre · parcel boundaries · ULPIN</div>
+      </div>
+      <div class="plate essential">
+        <svg class="grid-bg" viewBox="0 0 340 210"><g fill="none" stroke="#EAF7F1" stroke-width="1" opacity=".4"><path d="M20 40 L140 20 L200 70 L120 120 L30 100Z"/><path d="M200 70 L300 40 L320 130 L220 160 L120 120Z"/></g></svg>
+        <div class="pnum">02</div>
+        <div class="plabel">Essential Layer</div>
+        <div class="pdesc">RoR · registration · zoning · encumbrance</div>
+      </div>
+      <div class="plate usecase">
+        <svg class="grid-bg" viewBox="0 0 340 210"><g fill="none" stroke="#2A1E05" stroke-width="1" opacity=".3"><path d="M20 40 L140 20 L200 70 L120 120 L30 100Z"/></g></svg>
+        <div class="pnum">03</div>
+        <div class="plabel">Use-case Layer</div>
+        <div class="pdesc">Tax · utilities · valuation · services</div>
+      </div>
+      <div class="stack-caption">One parcel · many layers · one identity → hover to expand</div>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= SHELL ======================= -->
+<div class="shell">
+
+  <!-- TOC -->
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#summary">Executive summary</a></li>
+      <li><a href="#problem">Problem &amp; opportunity</a></li>
+      <li><a href="#bhulekh">Why this is not Bhulekh</a></li>
+      <li><a href="#vision">Vision, goals &amp; principles</a></li>
+      <li><a href="#users">Users &amp; personas</a></li>
+      <li><a href="#model">The three-layer model</a></li>
+      <li><a href="#features">Scope &amp; feature set</a></li>
+      <li><a href="#journeys">Key user journeys</a></li>
+      <li><a href="#requirements">Functional requirements</a></li>
+      <li><a href="#nfr">Non-functional requirements</a></li>
+      <li><a href="#diversity">State-diversity &amp; config</a></li>
+      <li><a href="#tech">Standard technical document</a></li>
+      <li><a href="#ai">AI / ML &amp; geo-intelligence</a></li>
+      <li><a href="#metrics">Success metrics</a></li>
+      <li><a href="#roadmap">Roadmap &amp; phasing</a></li>
+      <li><a href="#risks">Risks &amp; mitigations</a></li>
+      <li><a href="#scope">Assumptions &amp; open questions</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+    </ol>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- 1 SUMMARY -->
+    <section id="summary">
+      <p class="kicker"><span class="idx">01</span> Executive summary</p>
+      <h2>A federated operating system for land, not another record viewer</h2>
+      <p class="lead">Land Stack turns fragmented, department-owned land data into a unified, interoperable Digital Public Infrastructure (DPI). Every dataset — cadastral map, Record of Rights, registration, zoning, tax, utility — is bound to a single georeferenced land parcel identified by its <strong>ULPIN</strong>. Departments read and write through open APIs; citizens see one transparent, map-first interface.</p>
+      <div class="grid g3" style="margin-top:24px">
+        <div class="feature"><span class="tag">The gap</span><h4>Data lives in silos</h4><p>Cadastre, RoR, registration, planning, and tax systems rarely talk to each other. Verifying one parcel means visiting many portals and offices.</p></div>
+        <div class="feature"><span class="tag">The idea</span><h4>Parcel as the join key</h4><p>ULPIN becomes the universal foreign key. All governance data is attached to a spatial parcel, so a single query returns the whole picture.</p></div>
+        <div class="feature"><span class="tag">The outcome</span><h4>One trustworthy view</h4><p>Faster transactions, transparent ownership, better planning, and AI-assisted governance — replicable across every State and UT.</p></div>
+      </div>
+      <blockquote><p><strong>In one line:</strong> Land Stack is to land records what UPI is to payments — a thin, standardised, interoperable layer that lets many systems and citizens transact on a common rail, without forcing every State to abandon its existing databases.</p></blockquote>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 2 PROBLEM -->
+    <section id="problem">
+      <p class="kicker"><span class="idx">02</span> Problem &amp; opportunity</p>
+      <h2>Land governance is fragmented by design</h2>
+      <p class="lead">Because land is a State subject, records evolved independently across departments and States — in different formats, schemas, units, languages, and workflows. The cost is borne by citizens and the State alike.</p>
+      <div class="grid g2" style="margin-top:22px">
+        <div class="card">
+          <h4>What breaks today</h4>
+          <ul class="clean">
+            <li>Cadastral maps (BhuNaksha) and textual records (Bhulekh) are separate, weakly linked systems.</li>
+            <li>Registration, mutation, planning, tax, and utilities each run their own siloed databases.</li>
+            <li>Ownership verification is slow, presumptive, and prone to disputes and fraud.</li>
+            <li>No common parcel identity means the same land is described differently in every system.</li>
+            <li>Citizens navigate multiple portals and offices for a single land transaction.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Why now</h4>
+          <ul class="clean">
+            <li>ULPIN / “Bhu-Aadhaar” gives every parcel a permanent, geo-anchored identity.</li>
+            <li>DILRMP has digitised large volumes of RoR and cadastral data to build upon.</li>
+            <li>Mature DPI patterns (Aadhaar, DigiLocker, API Setu) provide proven building blocks.</li>
+            <li>Cloud, PostGIS, OGC services and MapLibre make parcel-scale GIS affordable.</li>
+            <li>AI/ML and satellite change-detection make proactive land governance feasible.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:18px" class="note">Context: The Department of Land Resources launched Land Stack in pilot locations of Chandigarh and Tamil Nadu on 31 December 2025, with a plan to cover one city and one village in every State/UT before scaling nationwide. This PRD describes a scalable prototype for that mandate.</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 3 BHULEKH -->
+    <section id="bhulekh">
+      <p class="kicker"><span class="idx">03</span> Positioning</p>
+      <h2>Why Land Stack is <em>not</em> Bhulekh</h2>
+      <p class="lead">Bhulekh (and its map sibling BhuNaksha) are State-level portals for <strong>viewing and downloading</strong> land records. They are useful, but they are single-purpose, read-oriented, State-siloed, and rarely interoperable. Land Stack is a different category of thing: a transactional, parcel-centric, cross-department platform. Below is exactly how we differ.</p>
+
+      <div class="grid g2" style="margin-top:22px;gap:16px">
+        <div class="diff"><div class="n">1</div><div><h4>Parcel-centric DPI, not record lookup</h4><p>Everything hangs off a georeferenced parcel keyed by ULPIN. One identity unifies map + record + registration + tax across systems.</p><p class="bhu">Bhulekh: textual RoR lookup, map lives elsewhere (BhuNaksha), no shared key.</p></div></div>
+        <div class="diff"><div class="n">2</div><div><h4>Interoperable by open APIs</h4><p>Departments integrate through published REST + OGC APIs, standard schemas, and consent — a shared rail, not a walled portal.</p><p class="bhu">Bhulekh: siloed per State; no standard cross-department API layer.</p></div></div>
+        <div class="diff"><div class="n">3</div><div><h4>AI/ML + geospatial intelligence</h4><p>Satellite change-detection, encroachment alerts, predictive dispute risk, and decision dashboards built in.</p><p class="bhu">Bhulekh: static display; no analytics or change detection.</p></div></div>
+        <div class="diff"><div class="n">4</div><div><h4>End-to-end citizen services &amp; workflows</h4><p>Search, verify, apply, pay, and track mutation / registration / permission / dispute — a full transaction, not a PDF.</p><p class="bhu">Bhulekh: mostly view-and-download; transactions remain offline / partial.</p></div></div>
+      </div>
+
+      <h3>Side-by-side comparison</h3>
+      <div class="tablewrap">
+        <table class="cmp">
+          <thead><tr><th>Capability</th><th>Bhulekh / BhuNaksha (typical)</th><th>Land Stack (this PRD)</th></tr></thead>
+          <tbody>
+            <tr><td>Primary purpose</td><td>View / download a State's land records</td><td class="yes">Interoperable DPI for all land governance</td></tr>
+            <tr><td>Spatial + textual</td><td>Separate systems, weakly linked</td><td class="yes">Unified — one parcel, many layers</td></tr>
+            <tr><td>Common identity</td><td>State-specific khasra/survey numbers</td><td class="yes">ULPIN as universal join key</td></tr>
+            <tr><td>Cross-department data</td><td class="no">Rarely integrated</td><td class="yes">Registration, planning, tax, utilities via APIs</td></tr>
+            <tr><td>Citizen transactions</td><td class="no">Mostly offline / partial</td><td class="yes">Apply · pay · e-sign · track online</td></tr>
+            <tr><td>APIs &amp; standards</td><td class="no">Limited / ad-hoc</td><td class="yes">OpenAPI + OGC WMS/WFS + consent</td></tr>
+            <tr><td>Analytics / AI</td><td class="no">None</td><td class="yes">Change detection, predictive, dashboards</td></tr>
+            <tr><td>Cross-State scaling</td><td class="no">Re-built per State</td><td class="yes">Config-driven, schema-mapped, multilingual</td></tr>
+            <tr><td>Legal validity of output</td><td>Often "reference only"</td><td class="yes">DigiLocker-issued, verifiable credentials</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:12px">We treat Bhulekh/BhuNaksha and existing State systems as <strong>data sources to integrate, not competitors to replace</strong>. Land Stack sits above them as an interoperability and service layer, which is precisely why it is a "stack," not a portal.</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 4 VISION -->
+    <section id="vision">
+      <p class="kicker"><span class="idx">04</span> Vision, goals &amp; principles</p>
+      <h2>What we are building, and the rules we build by</h2>
+      <p class="lead"><strong>Vision:</strong> Every land parcel in India has one trustworthy digital identity and one transparent window into its rights, restrictions, liabilities, and services — for citizens and the State alike.</p>
+      <div class="grid g2" style="margin-top:22px">
+        <div class="card">
+          <h4>Product goals</h4>
+          <ul class="clean">
+            <li>Bind all land datasets to a georeferenced parcel via ULPIN.</li>
+            <li>Enable secure, consented, cross-department data exchange through open APIs.</li>
+            <li>Deliver map-first citizen services: search, verify, transact, track.</li>
+            <li>Provide role-based dashboards and analytics for administrators.</li>
+            <li>Ship a modular prototype that is configurable per State/UT and replicable nationally.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Design principles (DPI)</h4>
+          <ul class="clean">
+            <li><strong>Federated, not centralised</strong> — States keep their systems of record.</li>
+            <li><strong>Interoperable by default</strong> — open standards, published schemas.</li>
+            <li><strong>Minimal &amp; consent-first</strong> — least data, purpose-bound, auditable.</li>
+            <li><strong>Parcel-centric</strong> — spatial identity is the organising principle.</li>
+            <li><strong>Inclusive</strong> — multilingual, mobile-first, low-bandwidth friendly.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 5 USERS -->
+    <section id="users">
+      <p class="kicker"><span class="idx">05</span> Users &amp; personas</p>
+      <h2>Who Land Stack serves</h2>
+      <p class="lead">The platform serves three constituencies: citizens, departmental officials, and institutional/data consumers. Each gets a role-scoped experience over the same parcel graph.</p>
+      <div class="grid g3" style="margin-top:22px">
+        <div class="persona"><div class="top"><span class="role">Citizen</span><h4>Land owner / buyer</h4></div><div class="body">Wants to verify ownership before buying, apply for mutation, track status, and hold a valid record.<div class="lbl">Needs</div>Trust, speed, mobile access, plain-language status.</div></div>
+        <div class="persona"><div class="top"><span class="role">Field official</span><h4>Patwari / Revenue Inspector</h4></div><div class="body">Processes mutations, updates RoR, resolves field discrepancies against the cadastre.<div class="lbl">Needs</div>Map + record on one screen, workflow queue, audit trail.</div></div>
+        <div class="persona"><div class="top"><span class="role">Registration</span><h4>Sub-Registrar</h4></div><div class="body">Registers deeds; needs encumbrance, valuation, and auto-triggered mutation.<div class="lbl">Needs</div>NGDRS integration, stamp-duty/valuation lookup, ULPIN linkage.</div></div>
+        <div class="persona"><div class="top"><span class="role">Planning</span><h4>Urban / Town Planner</h4></div><div class="body">Checks master plan, zoning, and building permissions against a parcel.<div class="lbl">Needs</div>Zoning overlays, permission workflow, change detection.</div></div>
+        <div class="persona"><div class="top"><span class="role">Fiscal</span><h4>Property Tax / ULB officer</h4></div><div class="body">Assesses and collects tax; reconciles taxpayers to parcels.<div class="lbl">Needs</div>Parcel-linked tax ledger, valuation references.</div></div>
+        <div class="persona"><div class="top"><span class="role">Institution</span><h4>Bank / Court / Utility</h4></div><div class="body">Consumes verified parcel data for loans, litigation, or service connections.<div class="lbl">Needs</div>Consent-based read APIs, encumbrance, verifiable credentials.</div></div>
+        <div class="persona"><div class="top"><span class="role">Administrator</span><h4>State Land Records Admin</h4></div><div class="body">Configures State schema, roles, workflows; monitors data quality.<div class="lbl">Needs</div>Config console, RBAC, dashboards, audit &amp; reports.</div></div>
+        <div class="persona"><div class="top"><span class="role">Steward</span><h4>National DoLR programme</h4></div><div class="body">Oversees adoption, standards conformance, and cross-State analytics.<div class="lbl">Needs</div>Conformance metrics, coverage dashboards, standards registry.</div></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 6 MODEL -->
+    <section id="model">
+      <p class="kicker"><span class="idx">06</span> The three-layer model</p>
+      <h2>Base → Essential → Use-case, all bound to ULPIN</h2>
+      <p class="lead">Information is organised into three spatial layer categories. The base layer is the spatial truth; essential layers define rights and restrictions; use-case layers extend services. ULPIN is the common thread through all three.</p>
+
+      <div class="grid" style="margin-top:22px;gap:16px">
+        <div class="card" style="border-left:4px solid #0E4E43">
+          <span class="pill">Layer 01 · Base</span>
+          <h3 style="margin-top:10px">Spatial foundation</h3>
+          <p style="color:var(--ink-soft);font-size:15px">Georeferenced cadastral maps, parcel boundaries (polygons), and the unique parcel identifier. This is the coordinate frame every other dataset attaches to.</p>
+          <div class="arch chips" style="background:none;padding:0"><span class="pill">Cadastral basemap</span><span class="pill">Parcel geometry (polygon)</span><span class="pill ochre">ULPIN</span><span class="pill">Survey / re-survey (drone, ETS)</span><span class="pill">CRS: WGS84 / UTM</span></div>
+        </div>
+        <div class="card" style="border-left:4px solid var(--survey)">
+          <span class="pill">Layer 02 · Essential</span>
+          <h3 style="margin-top:10px">Rights, restrictions &amp; liabilities</h3>
+          <p style="color:var(--ink-soft);font-size:15px">Core governance datasets linked to each parcel that together define ownership, rights, restrictions, liabilities, and permissible use.</p>
+          <div class="arch chips" style="background:none;padding:0"><span class="pill">Record of Rights (RoR)</span><span class="pill">Registration / deeds</span><span class="pill">Master plan</span><span class="pill">Building permissions</span><span class="pill">Encumbrance &amp; mortgage</span><span class="pill">Land use &amp; zoning</span></div>
+        </div>
+        <div class="card" style="border-left:4px solid var(--ochre)">
+          <span class="pill ochre">Layer 03 · Use-case</span>
+          <h3 style="margin-top:10px">Extended governance &amp; services</h3>
+          <p style="color:var(--ink-soft);font-size:15px">Additional datasets that extend the platform's governance and citizen-service capabilities, integrated as needed per context.</p>
+          <div class="arch chips" style="background:none;padding:0"><span class="pill">Utility infrastructure</span><span class="pill">Property taxation</span><span class="pill">Valuation references</span><span class="pill">Infrastructure networks</span><span class="pill">Environmental / restriction zones</span><span class="pill">Service linkages</span></div>
+        </div>
+      </div>
+      <blockquote><p><strong>The join:</strong> a parcel is <code class="inline">1 : N</code> to layer records. Given a ULPIN, the platform returns geometry + all linked essential and use-case records the requester is entitled to see — the single query Bhulekh cannot answer.</p></blockquote>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 7 FEATURES -->
+    <section id="features">
+      <p class="kicker"><span class="idx">07</span> Scope &amp; feature set</p>
+      <h2>Modules of the prototype</h2>
+      <p class="lead">Nine modules, grouped into the GIS core, the interoperability rail, citizen services, administration, and intelligence. Each is independently deployable.</p>
+
+      <h3>GIS core &amp; parcel identity</h3>
+      <div class="grid g3">
+        <div class="feature"><span class="tag">M1</span><h4>Parcel map explorer</h4><p>MapLibre-based viewer with base cadastre, toggleable layers, search, measure, and click-to-inspect any parcel.</p></div>
+        <div class="feature"><span class="tag">M2</span><h4>ULPIN registry</h4><p>Resolve, mint, and validate ULPINs; map legacy khasra/survey numbers to ULPIN; parcel history &amp; lineage on split/merge.</p></div>
+        <div class="feature"><span class="tag">M3</span><h4>Layer catalogue</h4><p>Metadata-driven registry of datasets, their owners, schemas, refresh cadence, and access rules.</p></div>
+      </div>
+
+      <h3>Interoperability rail</h3>
+      <div class="grid g3">
+        <div class="feature"><span class="tag">M4</span><h4>Open API gateway</h4><p>OpenAPI REST + OGC WMS/WFS/WMTS endpoints, versioned, rate-limited, with sandbox &amp; developer docs.</p></div>
+        <div class="feature"><span class="tag">M5</span><h4>Consent &amp; data-exchange</h4><p>Purpose-bound, time-boxed consent for institutional data pulls; adapters to NGDRS, DigiLocker, State RoR.</p></div>
+        <div class="feature"><span class="tag">M6</span><h4>Schema mapping engine</h4><p>Config-driven transforms that normalise diverse State schemas, units, and terminology into the canonical model.</p></div>
+      </div>
+
+      <h3>Citizen services, administration &amp; intelligence</h3>
+      <div class="grid g3">
+        <div class="feature"><span class="tag">M7</span><h4>Citizen service portal</h4><p>Parcel search, ownership verification, service requests (mutation, permission, correction), payments, e-sign, status tracking.</p></div>
+        <div class="feature"><span class="tag">M8</span><h4>Admin &amp; workflow console</h4><p>Role-based dashboards, BPMN-style workflow queues, approvals, audit trails, data-quality monitors, reports.</p></div>
+        <div class="feature"><span class="tag">M9</span><h4>Geo-intelligence engine</h4><p>Satellite change detection, encroachment alerts, dispute-risk scoring, valuation hints, decision dashboards.</p></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 8 JOURNEYS -->
+    <section id="journeys">
+      <p class="kicker"><span class="idx">08</span> Key user journeys</p>
+      <h2>How value shows up in practice</h2>
+      <div class="grid g2" style="gap:16px">
+        <div class="card">
+          <h4>Citizen — verify before you buy</h4>
+          <ol class="steps">
+            <li>Search a parcel by map pin, address, or ULPIN.</li>
+            <li>See owner(s), area, land use, and any encumbrance/mortgage flags.</li>
+            <li>Pull a consent-based, DigiLocker-verifiable ownership certificate.</li>
+            <li>View dispute-risk and recent change-detection flags before deciding.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h4>Registration → mutation, straight-through</h4>
+          <ol class="steps">
+            <li>Sub-Registrar registers a deed in NGDRS, linked to the ULPIN.</li>
+            <li>Land Stack auto-creates a mutation task for the Revenue office.</li>
+            <li>Patwari verifies on the map + record view and approves.</li>
+            <li>RoR updates; citizen is notified; audit trail is immutable.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h4>Planner — building permission check</h4>
+          <ol class="steps">
+            <li>Open the parcel; overlay master plan &amp; zoning layers.</li>
+            <li>System validates the proposal against permissible land use.</li>
+            <li>Route for approvals; flag environmental/restriction zones.</li>
+            <li>Issue permission linked to the parcel and visible to the citizen.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h4>Admin — detect an encroachment</h4>
+          <ol class="steps">
+            <li>Satellite change-detection flags new construction on public land.</li>
+            <li>Alert lands in the admin dashboard with before/after imagery.</li>
+            <li>Official opens a case; workflow assigns field verification.</li>
+            <li>Outcome recorded against the parcel with full provenance.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 9 REQUIREMENTS -->
+    <section id="requirements">
+      <p class="kicker"><span class="idx">09</span> Functional requirements</p>
+      <h2>Prioritised with MoSCoW</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Module</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">FR-01</td><td>Render georeferenced cadastral basemap with pan/zoom and layer toggles</td><td>M1</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-02</td><td>Search parcels by ULPIN, survey/khasra no., owner, or map click</td><td>M1</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-03</td><td>Return all entitled layer records for a parcel in one response</td><td>M2</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-04</td><td>Map legacy identifiers to ULPIN; maintain split/merge lineage</td><td>M2</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-05</td><td>Expose OpenAPI REST + OGC WMS/WFS endpoints with auth</td><td>M4</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-06</td><td>Ingest &amp; normalise mock RoR/registration/tax datasets via schema mapping</td><td>M6</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-07</td><td>Citizen ownership verification with verifiable, downloadable credential</td><td>M7</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-08</td><td>Submit &amp; track a service request (mutation/correction) end-to-end</td><td>M7</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-09</td><td>Role-based admin dashboard with workflow queues &amp; approvals</td><td>M8</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-10</td><td>Immutable audit trail for every read/write with actor &amp; purpose</td><td>M8</td><td><span class="pill">Must</span></td></tr>
+            <tr><td class="mono">FR-11</td><td>Registration event auto-triggers mutation workflow (simulated NGDRS)</td><td>M5/M8</td><td><span class="pill ochre">Should</span></td></tr>
+            <tr><td class="mono">FR-12</td><td>Consent-based institutional read API (bank/court/utility)</td><td>M5</td><td><span class="pill ochre">Should</span></td></tr>
+            <tr><td class="mono">FR-13</td><td>Satellite change-detection flags with before/after tiles</td><td>M9</td><td><span class="pill ochre">Should</span></td></tr>
+            <tr><td class="mono">FR-14</td><td>Predictive dispute-risk score &amp; decision dashboard</td><td>M9</td><td><span class="pill ochre">Should</span></td></tr>
+            <tr><td class="mono">FR-15</td><td>Multilingual UI (English + State language) with transliteration</td><td>M7</td><td><span class="pill ochre">Should</span></td></tr>
+            <tr><td class="mono">FR-16</td><td>Offline-tolerant field mode for patwari devices</td><td>M8</td><td><span class="pill coral">Could</span></td></tr>
+            <tr><td class="mono">FR-17</td><td>3D / drone-orthophoto layer for urban parcels</td><td>M1</td><td><span class="pill coral">Could</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 10 NFR -->
+    <section id="nfr">
+      <p class="kicker"><span class="idx">10</span> Non-functional requirements</p>
+      <h2>Quality attributes</h2>
+      <div class="grid g4">
+        <div class="feature"><span class="tag">Performance</span><h4>&lt; 2s parcel load</h4><p>Vector tiles + cached OGC layers; API p95 under 500 ms for parcel reads.</p></div>
+        <div class="feature"><span class="tag">Scalability</span><h4>Parcel-scale</h4><p>Horizontal scaling; MongoDB sharding by State; tile CDN; stateless services.</p></div>
+        <div class="feature"><span class="tag">Availability</span><h4>99.9% target</h4><p>Multi-AZ, health checks, graceful degradation to read-only.</p></div>
+        <div class="feature"><span class="tag">Security</span><h4>Zero-trust</h4><p>OIDC, RBAC, encryption in transit/at rest, immutable audit.</p></div>
+        <div class="feature"><span class="tag">Privacy</span><h4>DPDP-aligned</h4><p>Consent, purpose limitation, data minimisation, retention rules.</p></div>
+        <div class="feature"><span class="tag">Accessibility</span><h4>WCAG 2.1 AA</h4><p>Keyboard nav, contrast, screen-reader labels, reduced-motion.</p></div>
+        <div class="feature"><span class="tag">Localisation</span><h4>Multilingual</h4><p>i18n framework; RoR transliteration across scheduled languages.</p></div>
+        <div class="feature"><span class="tag">Portability</span><h4>Cloud-native</h4><p>Containerised, IaC, deployable on MeghRaj / any CSP.</p></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 11 DIVERSITY -->
+    <section id="diversity">
+      <p class="kicker"><span class="idx">11</span> State-diversity &amp; configurability</p>
+      <h2>Solving “land is a State subject”</h2>
+      <p class="lead">The hardest requirement is diversity: record formats, schemas, units, field counts, language, terminology, and workflows differ by State. Land Stack absorbs this with a canonical model plus per-State configuration — never a hard-coded assumption.</p>
+      <div class="grid g2" style="margin-top:20px">
+        <div class="card">
+          <h4>Configuration surface</h4>
+          <ul class="clean">
+            <li><strong>Canonical schema + adapters:</strong> each State maps its fields to the canonical parcel/RoR model via declarative config.</li>
+            <li><strong>Unit normalisation:</strong> bigha, katha, acre, hectare, guntha → SI internally, displayed in local units.</li>
+            <li><strong>Terminology packs:</strong> khatauni / jamabandi / patta / RTC mapped to canonical roles.</li>
+            <li><strong>Language packs:</strong> UI + record transliteration per State language.</li>
+            <li><strong>Workflow templates:</strong> mutation/registration steps configured, not coded.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>How a new State onboards</h4>
+          <ol class="steps">
+            <li>Load the State's cadastre &amp; sample RoR into the layer catalogue.</li>
+            <li>Author a mapping profile (fields, units, terms, language).</li>
+            <li>Select workflow templates &amp; role definitions.</li>
+            <li>Validate with sample parcels; publish APIs; go live for a pilot city + village.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 12 TECH -->
+    <section id="tech">
+      <p class="kicker"><span class="idx">12</span> Standard technical document</p>
+      <h2>Architecture, standards, schemas &amp; security</h2>
+      <p class="lead">A condensed version of the required Standard Technical Document: system architecture on a MERN + geospatial stack, API and interoperability standards, data schemas, GIS standards, security framework, UI/UX guidelines with the color schema, and deployment/scalability considerations.</p>
+
+      <h3>12.1 System architecture (MERN + geospatial)</h3>
+      <div class="arch">
+        <div class="row">
+          <div class="tier"><div class="tname">Presentation — React</div><div class="chips"><span class="chip hl">React + Vite</span><span class="chip">MapLibre GL JS</span><span class="chip">Redux Toolkit / RTK Query</span><span class="chip">Tailwind</span><span class="chip">PWA (offline field mode)</span><span class="chip">i18next</span></div></div>
+        </div>
+        <div class="flow">▲ HTTPS · JSON · vector tiles ▼</div>
+        <div class="row">
+          <div class="tier"><div class="tname">API &amp; services — Node / Express</div><div class="chips"><span class="chip hl">Express / Node.js</span><span class="chip">API gateway (OpenAPI)</span><span class="chip">Auth: OIDC / JWT</span><span class="chip">Consent service</span><span class="chip">Workflow engine (BPMN)</span><span class="chip">Schema-mapping service</span><span class="chip oc">GeoServer (OGC WMS/WFS/WMTS)</span></div></div>
+        </div>
+        <div class="flow">▲ queries ▼</div>
+        <div class="row" style="grid-template-columns:1fr 1fr">
+          <div class="tier"><div class="tname">Operational data — MongoDB</div><div class="chips"><span class="chip hl">MongoDB (parcels, records, workflow, audit)</span><span class="chip">GeoJSON + 2dsphere index</span><span class="chip">Sharded by State</span></div></div>
+          <div class="tier"><div class="tname">Spatial store — PostGIS</div><div class="chips"><span class="chip oc">PostgreSQL + PostGIS</span><span class="chip">Authoritative geometry / topology</span><span class="chip">Tile pipeline → MBTiles/PMTiles</span></div></div>
+        </div>
+        <div class="flow">▲ events · adapters ▼</div>
+        <div class="row">
+          <div class="tier"><div class="tname">Integration &amp; intelligence</div><div class="chips"><span class="chip">Adapters: NGDRS · DigiLocker · State RoR</span><span class="chip">Kafka/Redis event bus</span><span class="chip oc">Python ML service (change detection, risk)</span><span class="chip">Object store (imagery/tiles)</span></div></div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">MongoDB is the operational document store (flexible per-State schemas, fast parcel-graph reads); PostGIS is the authoritative geometry/topology engine and OGC source. This split keeps the developer-friendly MERN core while giving true GIS rigour where it matters.</p>
+
+      <h3>12.2 API &amp; interoperability standards</h3>
+      <div class="grid g2">
+        <div class="card">
+          <h4>Standards adopted</h4>
+          <ul class="clean">
+            <li><strong>REST + OpenAPI 3.1</strong> — versioned (<code class="inline">/v1</code>), JSON, cursor pagination.</li>
+            <li><strong>OGC services</strong> — WMS, WFS, WMTS; <strong>GeoJSON</strong> &amp; vector tiles for delivery.</li>
+            <li><strong>OAuth 2.0 / OIDC</strong> — tokens; <strong>consent artefacts</strong> for institutional access.</li>
+            <li><strong>Aadhaar / DigiLocker / API Setu</strong> patterns for identity &amp; document issue.</li>
+            <li><strong>Metadata</strong> — ISO 19115 / DCAT for dataset descriptions in the catalogue.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Representative endpoints</h4>
+          <pre><span class="c"># Resolve a parcel and its entitled layers</span>
+GET /v1/parcels/{ulpin}
+GET /v1/parcels/{ulpin}/ror
+GET /v1/parcels/{ulpin}/encumbrance
+GET /v1/parcels?bbox=76.7,30.7,76.8,30.8   <span class="c"># map query</span>
+
+<span class="c"># Citizen service request + tracking</span>
+POST /v1/service-requests        <span class="c"># mutation, correction…</span>
+GET  /v1/service-requests/{id}
+
+<span class="c"># Consent-based institutional read</span>
+POST /v1/consent                 <span class="c"># purpose, scope, ttl</span>
+GET  /v1/parcels/{ulpin}?consent={token}
+
+<span class="c"># OGC spatial services</span>
+GET /geoserver/wms?...&LAYERS=cadastre
+GET /geoserver/wfs?...&typeName=parcels</pre>
+        </div>
+      </div>
+
+      <h3>12.3 Canonical data schema (illustrative)</h3>
+      <pre><span class="c">// Parcel — the spine of the model</span>
+{
+  <span class="k">"ulpin"</span>: <span class="s">"CH-01-0007-0421-8832"</span>,      <span class="c">// universal key</span>
+  <span class="k">"state"</span>: <span class="s">"CH"</span>, <span class="k">"revenueUnit"</span>: <span class="s">"…"</span>,
+  <span class="k">"geometry"</span>: { <span class="k">"type"</span>: <span class="s">"Polygon"</span>, <span class="k">"coordinates"</span>: [[ … ]] },
+  <span class="k">"crs"</span>: <span class="s">"EPSG:4326"</span>,
+  <span class="k">"area"</span>: { <span class="k">"value"</span>: 1240.5, <span class="k">"unit"</span>: <span class="s">"sqm"</span> },
+  <span class="k">"legacyIds"</span>: [{ <span class="k">"type"</span>: <span class="s">"khasra"</span>, <span class="k">"value"</span>: <span class="s">"217/2"</span> }],
+  <span class="k">"lineage"</span>: { <span class="k">"parents"</span>: [], <span class="k">"event"</span>: <span class="s">"original"</span> },
+  <span class="k">"layers"</span>: {
+    <span class="k">"ror"</span>: <span class="s">"ref:ror/…"</span>, <span class="k">"registration"</span>: <span class="s">"ref:reg/…"</span>,
+    <span class="k">"zoning"</span>: <span class="s">"R2"</span>, <span class="k">"encumbrance"</span>: <span class="s">"ref:enc/…"</span>,
+    <span class="k">"tax"</span>: <span class="s">"ref:tax/…"</span>, <span class="k">"utilities"</span>: [<span class="s">"water"</span>,<span class="s">"power"</span>]
+  },
+  <span class="k">"status"</span>: <span class="s">"active"</span>, <span class="k">"updatedAt"</span>: <span class="s">"2026-08-20T…"</span>
+}</pre>
+
+      <h3>12.4 GIS standards</h3>
+      <div class="grid g3">
+        <div class="feature"><span class="tag">CRS</span><h4>WGS84 / UTM</h4><p>Storage in EPSG:4326; display in Web Mercator (3857); India UTM zones 42N–47N for measurement.</p></div>
+        <div class="feature"><span class="tag">Services</span><h4>OGC-compliant</h4><p>WMS/WFS/WMTS via GeoServer; GeoJSON + vector tiles (PMTiles/MVT) to the client.</p></div>
+        <div class="feature"><span class="tag">Quality</span><h4>Topology</h4><p>PostGIS topology rules: no gaps/overlaps; validated parcel closure &amp; snapping.</p></div>
+      </div>
+
+      <h3>12.5 Security framework</h3>
+      <div class="grid g2">
+        <div class="card"><h4>Controls</h4><ul class="clean">
+          <li><strong>AuthN:</strong> OIDC; Aadhaar-based citizen auth (voluntary); MFA for officials.</li>
+          <li><strong>AuthZ:</strong> fine-grained RBAC + attribute rules by role, State, and layer.</li>
+          <li><strong>Consent:</strong> purpose-bound, time-boxed tokens for third-party reads.</li>
+          <li><strong>Crypto:</strong> TLS 1.3 in transit; AES-256 at rest; signed credentials.</li>
+        </ul></div>
+        <div class="card"><h4>Assurance</h4><ul class="clean">
+          <li><strong>Audit:</strong> immutable, append-only log of every access with actor + purpose.</li>
+          <li><strong>Integrity:</strong> tamper-evident record hashes; optional ledger anchoring.</li>
+          <li><strong>Privacy:</strong> DPDP Act alignment — minimisation, retention, erasure.</li>
+          <li><strong>Resilience:</strong> rate limiting, WAF, secrets vault, backup/restore drills.</li>
+        </ul></div>
+      </div>
+
+      <h3>12.6 UI/UX guidelines</h3>
+      <p style="color:var(--ink-soft)">Map-first, mobile-first, and low-cognitive-load. Plain-language labels named for what citizens control. Every action keeps one verb through its flow. Empty and error states give direction, not apologies. Meets WCAG 2.1 AA with visible focus and reduced-motion support.</p>
+
+      <h3>12.7 Color schema (design system)</h3>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#082220"></div><div class="meta"><div class="nm">Pine Deep</div><div class="hx">#082220</div></div></div>
+        <div class="sw"><div class="chip" style="background:#103A34"></div><div class="meta"><div class="nm">Pine</div><div class="hx">#103A34</div></div></div>
+        <div class="sw"><div class="chip" style="background:#1F8A70"></div><div class="meta"><div class="nm">Survey (primary)</div><div class="hx">#1F8A70</div></div></div>
+        <div class="sw"><div class="chip" style="background:#26A883"></div><div class="meta"><div class="nm">Survey Bright</div><div class="hx">#26A883</div></div></div>
+        <div class="sw"><div class="chip" style="background:#C9942B"></div><div class="meta"><div class="nm">Ochre (accent)</div><div class="hx">#C9942B</div></div></div>
+        <div class="sw"><div class="chip" style="background:#CF4F38"></div><div class="meta"><div class="nm">Coral (alert)</div><div class="hx">#CF4F38</div></div></div>
+        <div class="sw"><div class="chip" style="background:#F5F7F3;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">Paper (bg)</div><div class="hx">#F5F7F3</div></div></div>
+        <div class="sw"><div class="chip" style="background:#0B2A26"></div><div class="meta"><div class="nm">Ink (text)</div><div class="hx">#0B2A26</div></div></div>
+      </div>
+      <p class="note" style="margin-top:10px">Type system — Display: <strong>Space Grotesk</strong> · Body: <strong>IBM Plex Sans</strong> · Data/code: <strong>IBM Plex Mono</strong>. Semantic use: survey-green = primary/interactive, ochre = highlight/identity (ULPIN), coral = alerts/gaps only.</p>
+
+      <h3>12.8 Deployment &amp; scalability</h3>
+      <div class="grid g3">
+        <div class="feature"><span class="tag">Packaging</span><h4>Containers + IaC</h4><p>Docker images, Kubernetes, Terraform; deployable on NIC MeghRaj or any CSP.</p></div>
+        <div class="feature"><span class="tag">Scale</span><h4>Shard &amp; cache</h4><p>MongoDB sharded by State; tile CDN; read replicas; stateless autoscaled services.</p></div>
+        <div class="feature"><span class="tag">Ops</span><h4>Observability</h4><p>Central logs, metrics, tracing; blue-green deploys; automated backups &amp; DR.</p></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 13 AI -->
+    <section id="ai">
+      <p class="kicker"><span class="idx">13</span> AI / ML &amp; geospatial intelligence</p>
+      <h2>From record-keeping to proactive governance</h2>
+      <div class="grid g2">
+        <div class="feature"><span class="tag">Satellite change detection</span><h4>Spot unauthorised change</h4><p>Compare time-series imagery to flag new construction, encroachment on public/forest land, or land-use change — with before/after tiles for officials.</p></div>
+        <div class="feature"><span class="tag">Predictive analytics</span><h4>Dispute &amp; fraud risk</h4><p>Score parcels for dispute likelihood from mutation frequency, ownership churn, and encumbrance patterns to prioritise review.</p></div>
+        <div class="feature"><span class="tag">Workflow automation</span><h4>Straight-through processing</h4><p>Auto-route registration → mutation, auto-validate proposals against zoning, and surface exceptions for human decision.</p></div>
+        <div class="feature"><span class="tag">Decision-support</span><h4>Governance dashboards</h4><p>Coverage, backlog, revenue, and data-quality KPIs; valuation hints from comparable transactions for planners and fiscal teams.</p></div>
+      </div>
+      <p class="note" style="margin-top:10px">Responsible-AI stance: models assist, humans decide. Every AI flag is explainable, logged, and appealable; no automated adverse action on a citizen without official review.</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 14 METRICS -->
+    <section id="metrics">
+      <p class="kicker"><span class="idx">14</span> Success metrics</p>
+      <h2>How we know it works</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Dimension</th><th>Metric</th><th>Prototype target</th></tr></thead>
+          <tbody>
+            <tr><td>Integration</td><td>Distinct land datasets linked per parcel</td><td>≥ 6 layers across all 3 categories</td></tr>
+            <tr><td>Interoperability</td><td>Published, documented open APIs</td><td>≥ 10 endpoints incl. OGC services</td></tr>
+            <tr><td>Citizen speed</td><td>Time to verify ownership</td><td>Minutes (from days), fully online</td></tr>
+            <tr><td>Transaction</td><td>Mutation cycle-time (simulated)</td><td>−50% vs. manual baseline</td></tr>
+            <tr><td>Transparency</td><td>Actions with immutable audit trail</td><td>100%</td></tr>
+            <tr><td>Intelligence</td><td>Change-detection precision (demo AOI)</td><td>Demonstrated with before/after</td></tr>
+            <tr><td>Scalability</td><td>New State onboarding via config</td><td>Without code changes</td></tr>
+            <tr><td>Accessibility</td><td>WCAG conformance</td><td>2.1 AA on core flows</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 15 ROADMAP -->
+    <section id="roadmap">
+      <p class="kicker"><span class="idx">15</span> Roadmap &amp; phasing</p>
+      <h2>Prototype → State → nation</h2>
+      <div class="road">
+        <div class="phase"><span class="when">Phase 0 · Hackathon prototype</span><h4>Prove the concept</h4><p>GIS parcel explorer, ULPIN registry, mock datasets across all 3 layers, citizen verify + one service workflow, admin dashboard, core open APIs, one AI demo (change detection).</p></div>
+        <div class="phase"><span class="when">Phase 1 · Pilot hardening</span><h4>Chandigarh + Tamil Nadu</h4><p>Real adapters to State RoR, NGDRS, DigiLocker; consent service; security &amp; audit hardening; config-driven schema mapping for both pilots (one urban, one rural context).</p></div>
+        <div class="phase"><span class="when">Phase 2 · Breadth</span><h4>One city + one village per State/UT</h4><p>Onboarding toolkit, terminology/language packs, workflow templates, conformance dashboards; scale infra with sharding + tile CDN.</p></div>
+        <div class="phase"><span class="when">Phase 3 · Nationwide</span><h4>National DPI</h4><p>Full coverage, standards registry, cross-State analytics, marketplace of use-case layers, path toward conclusive titling.</p></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 16 RISKS -->
+    <section id="risks">
+      <p class="kicker"><span class="idx">16</span> Risks &amp; mitigations</p>
+      <h2>What could go wrong, and our answer</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr><td>Data quality &amp; map-record mismatch</td><td>High</td><td>Topology validation, reconciliation tools, confidence flags, human-in-loop.</td></tr>
+            <tr><td>State schema/terminology diversity</td><td>High</td><td>Canonical model + declarative mapping; no hard-coded assumptions.</td></tr>
+            <tr><td>Privacy of ownership data</td><td>High</td><td>Consent-first, minimisation, RBAC, audit; DPDP alignment.</td></tr>
+            <tr><td>Legacy system integration friction</td><td>Medium</td><td>Adapter pattern; start read-only; event-based sync; sandbox APIs.</td></tr>
+            <tr><td>Low-bandwidth / device constraints</td><td>Medium</td><td>Vector tiles, PWA offline mode, progressive enhancement.</td></tr>
+            <tr><td>Over-reliance on AI outputs</td><td>Medium</td><td>Explainable, logged, appealable; assists not decides.</td></tr>
+            <tr><td>Adoption &amp; change management</td><td>Medium</td><td>Role-scoped UX, training mode, mirror familiar workflows.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 17 SCOPE -->
+    <section id="scope">
+      <p class="kicker"><span class="idx">17</span> Assumptions &amp; open questions</p>
+      <h2>Boundaries of this prototype</h2>
+      <div class="grid g3">
+        <div class="card"><h4>Assumptions</h4><ul class="clean">
+          <li>Mock/sample datasets stand in for live State systems in the demo.</li>
+          <li>ULPIN is available or can be minted for demo parcels.</li>
+          <li>Pilot contexts: one urban (Chandigarh), one rural (Tamil Nadu).</li>
+        </ul></div>
+        <div class="card"><h4>Out of scope (prototype)</h4><ul class="clean">
+          <li>Legally binding conclusive titling.</li>
+          <li>Production integrations with every State's live database.</li>
+          <li>Payment settlement beyond a simulated gateway.</li>
+        </ul></div>
+        <div class="card"><h4>Open questions</h4><ul class="clean">
+          <li>Definitive ULPIN format &amp; minting authority per State.</li>
+          <li>Canonical CRS for each pilot State's cadastre.</li>
+          <li>Governance model for cross-State standards conformance.</li>
+        </ul></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 18 GLOSSARY -->
+    <section id="glossary">
+      <p class="kicker"><span class="idx">18</span> Glossary</p>
+      <h2>Terms used in this document</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">ULPIN</td><td>Unique Land Parcel Identification Number ("Bhu-Aadhaar") — a permanent, geo-referenced parcel identity.</td></tr>
+            <tr><td class="mono">RoR</td><td>Record of Rights — ownership/rights document (khatauni, jamabandi, patta, RTC by State).</td></tr>
+            <tr><td class="mono">DILRMP</td><td>Digital India Land Records Modernization Programme (DoLR).</td></tr>
+            <tr><td class="mono">NGDRS</td><td>National Generic Document Registration System — configurable registration software.</td></tr>
+            <tr><td class="mono">Bhulekh / BhuNaksha</td><td>State portals for textual land records / cadastral maps respectively.</td></tr>
+            <tr><td class="mono">DPI</td><td>Digital Public Infrastructure — open, interoperable, federated public rails.</td></tr>
+            <tr><td class="mono">OGC</td><td>Open Geospatial Consortium — WMS/WFS/WMTS and GeoJSON standards.</td></tr>
+            <tr><td class="mono">Encumbrance</td><td>Legal liability on a parcel (e.g. mortgage) affecting its transfer.</td></tr>
+            <tr><td class="mono">Mutation</td><td>Updating the RoR to reflect a change of ownership.</td></tr>
+            <tr><td class="mono">DPDP</td><td>Digital Personal Data Protection Act — India's data-protection law.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <p><strong style="color:#EAF3EE;font-family:var(--font-display)">Land Stack</strong> — Integrated GIS-based Digital Public Infrastructure for Land Governance</p>
+  <p class="mono">Product Requirements Document v1.0 · Smart India Hackathon 2026 · Team [Your Team Name]</p>
+  <p class="mono">Prepared for the Department of Land Resources, Ministry of Rural Development · Not affiliated with or endorsed by DoLR</p>
+</footer>
+
+</body>
+</html>

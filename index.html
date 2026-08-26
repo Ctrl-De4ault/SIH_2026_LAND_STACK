@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land Stack — Citizen Portal (Prototype)</title>
+<meta name="description" content="Land Stack citizen portal prototype — search a parcel, verify ownership, and view all linked land layers around a single ULPIN.">
+
+<!-- MapLibre GL JS -->
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ TOPBAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <g fill="none" stroke-width="2">
+          <path d="M6 24 L20 17 L34 24 L20 31 Z" fill="#C9942B" stroke="#C9942B"/>
+          <path d="M6 18 L20 11 L34 18 L20 25 Z" fill="#26A883" stroke="#26A883"/>
+          <path d="M6 12 L20 5 L34 12 L20 19 Z" fill="#EAF3EE" stroke="#EAF3EE"/>
+        </g>
+      </svg>
+      <div>
+        <span class="name">Land Stack</span>
+        <span class="sub" data-i18n="tagline">Citizen Portal · Prototype</span>
+      </div>
+    </div>
+
+    <!-- search -->
+    <div class="search" id="search">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Search by ULPIN, owner name, or address…" data-i18n-ph="searchPlaceholder"
+             aria-label="Search parcels">
+      <button class="clr" id="searchClear" aria-label="Clear search">×</button>
+      <div class="suggest" id="suggest" role="listbox"></div>
+    </div>
+
+    <!-- controls -->
+    <div class="controls">
+      <div class="lang" role="group" aria-label="Language">
+        <button id="langEn" class="on">EN</button>
+        <button id="langHi">हिं</button>
+      </div>
+      <button class="btn btn-ghost" id="openVerify" data-i18n="verifyRecord">Verify a record</button>
+      <span class="pilot-badge"><span class="dot"></span><span data-i18n="pilot">Chandigarh pilot</span></span>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div id="map"></div>
+
+    <div class="map-hint" id="mapHint">
+      <button class="x" id="hintClose" aria-label="Dismiss">×</button>
+      <b data-i18n="hintTitle">Tap any parcel</b><br>
+      <span data-i18n="hintBody">Every parcel is keyed by its ULPIN and linked to all its land-record layers — ownership, registration, zoning, encumbrance, tax and utilities.</span>
+    </div>
+
+    <div class="legend" aria-hidden="true">
+      <h4 data-i18n="landUse">Land use</h4>
+      <div id="legendItems"></div>
+    </div>
+
+    <!-- Detail panel -->
+    <aside class="panel" id="panel" aria-live="polite">
+      <div class="phead">
+        <button class="close" id="panelClose" aria-label="Close">×</button>
+        <div class="eyebrow" data-i18n="parcelIdentity">Parcel identity · ULPIN</div>
+        <div class="ulpin" id="pUlpin">—</div>
+        <div class="addr" id="pAddr">—</div>
+      </div>
+      <div class="pbody" id="pBody"><!-- populated by app.js --></div>
+      <div class="pfoot">
+        <button class="btn btn-primary" id="verifyOwnership">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.4-3 8-7 9-4-1-7-4.6-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span data-i18n="verifyOwnership">Verify ownership &amp; get record</span>
+        </button>
+        <div class="fineprint" data-i18n="disclaimer">Fictional demonstration data — not a real land record.</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ============ CERTIFICATE MODAL ============ -->
+<div class="overlay" id="certOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Ownership verification record">
+    <div class="mhead">
+      <h3 data-i18n="ownershipRecord">Ownership verification record</h3>
+      <button class="close" id="certClose" aria-label="Close">×</button>
+    </div>
+    <div class="mbody">
+      <div class="cert" id="certCard">
+        <div class="ctop">
+          <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke-width="2">
+            <path d="M6 24 L20 17 L34 24 L20 31 Z" fill="#C9942B" stroke="#C9942B"/>
+            <path d="M6 18 L20 11 L34 18 L20 25 Z" fill="#26A883" stroke="#26A883"/>
+            <path d="M6 12 L20 5 L34 12 L20 19 Z" fill="#EAF3EE" stroke="#EAF3EE"/></g></svg>
+          <div>
+            <div class="t">Land Stack — Verified Ownership</div>
+            <div class="s">Digital Public Infrastructure for Land · Prototype</div>
+          </div>
+        </div>
+        <div class="cmid">
+          <div class="info" id="certInfo"><!-- rows injected --></div>
+          <div class="qr">
+            <canvas id="certQr" width="104" height="104"></canvas>
+            <div class="lbl" data-i18n="scanVerify">SCAN TO VERIFY</div>
+          </div>
+        </div>
+        <div class="verified-stamp" data-i18n="verified">Verified</div>
+        <div class="cfoot">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <span data-i18n="certFoot">Issued by the Land Stack prototype. Verifiable via the record ID. Not legally valid.</span>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-line" id="certPrint" data-i18n="printSave">Print / Save PDF</button>
+      <button class="btn btn-primary" id="certCopy" data-i18n="copyId">Copy record ID</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VERIFY-A-RECORD MODAL ============ -->
+<div class="overlay" id="lookupOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Verify a record">
+    <div class="mhead">
+      <h3 data-i18n="verifyRecord">Verify a record</h3>
+      <button class="close" id="lookupClose" aria-label="Close">×</button>
+    </div>
+    <div class="mbody verify-lookup">
+      <p style="margin:0 0 12px;color:var(--ink-soft);font-size:14px" data-i18n="verifyIntro">
+        Enter a Land Stack record ID to confirm it was issued by the platform and see the parcel it certifies.</p>
+      <div class="field">
+        <input id="lookupInput" type="text" placeholder="LS-VER-XXXXXXXX" aria-label="Record ID">
+        <button class="btn btn-primary" id="lookupBtn" data-i18n="check">Check</button>
+      </div>
+      <div class="hint-ids" data-i18n-html="tryIds">Try: <code data-fill>LS-VER-7F3A9C2E</code> <code data-fill>LS-VER-1B8D4402</code></div>
+      <div class="verify-result" id="lookupResult"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Scripts: loaded via <script src> (not fetch) so file:// works -->
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

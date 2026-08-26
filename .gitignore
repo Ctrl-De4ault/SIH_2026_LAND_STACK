@@ -1,0 +1,14 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+
+# Node (only relevant once the MERN backend is added)
+node_modules/
+npm-debug.log*
+.env
+.env.local
