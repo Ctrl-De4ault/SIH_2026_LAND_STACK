@@ -165,7 +165,7 @@
       },
       layers: [{
         id: "osm", type: "raster", source: "osm",
-        paint: { "raster-saturation": -0.55, "raster-opacity": 0.92, "raster-contrast": -0.05 }
+        paint: { "raster-saturation": -0.68, "raster-opacity": 0.86, "raster-brightness-min": 0.04, "raster-contrast": -0.06 }
       }]
     },
     center: DATA.center, zoom: DATA.zoom, attributionControl: true
@@ -201,7 +201,7 @@
     map.addLayer({
       id: "parcels-line", type: "line", source: "parcels",
       paint: {
-        "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#C9942B", "#0B2A26"],
+        "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#C9942B", "#1C5348"],
         "line-width": ["case",
           ["boolean", ["feature-state", "selected"], false], 3.6,
           ["boolean", ["feature-state", "hover"], false], 2.0, 1.0],
@@ -222,10 +222,10 @@
       var p = f.properties;
       var sw = DATA.landUseColors[p.landUse] || "#8AA39B";
       hoverPopup.setLngLat(e.lngLat).setHTML(
-        '<div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#0B2A26">' +
-        '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + sw + ';margin-right:6px"></span>' +
+        '<div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#14332C">' +
+        '<span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:' + sw + ';margin-right:6px"></span>' +
         esc(p.ulpin) + '</div>' +
-        '<div style="font-family:IBM Plex Sans,sans-serif;font-size:12px;color:#40534E;margin-top:2px">' +
+        '<div style="font-family:Hanken Grotesk,sans-serif;font-size:12px;color:#5C6E67;margin-top:2px">' +
         esc(p.landUse) + " · " + esc(p.sector) + '</div>'
       ).addTo(map);
     });
@@ -543,9 +543,9 @@
     if (!w) { toast("Popup blocked — allow popups to print."); return; }
     w.document.write(
       '<!DOCTYPE html><html><head><title>Land Stack — Ownership Record</title>' +
-      '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">' +
+      '<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">' +
       '<link rel="stylesheet" href="assets/styles.css">' +
-      '<style>body{background:#fff;padding:28px;font-family:IBM Plex Sans,sans-serif}</style></head><body>' +
+      '<style>body{background:#fff;padding:28px;font-family:Hanken Grotesk,sans-serif}</style></head><body>' +
       card + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},350);}</scr' + 'ipt></body></html>');
     w.document.close();
   }
