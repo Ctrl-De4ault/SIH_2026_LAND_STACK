@@ -39,7 +39,7 @@ function fillColorExpr() {
   return expr;
 }
 
-const MapView = forwardRef(function MapView({ onSelect, selectedUlpin }, ref) {
+const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeatures }, ref) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const byUlpin = useRef(new Map());
@@ -105,6 +105,7 @@ const MapView = forwardRef(function MapView({ onSelect, selectedUlpin }, ref) {
       }
       const features = (fc && fc.features) || [];
       features.forEach((f) => byUlpin.current.set(f.properties.ulpin, f));
+      onFeatures && onFeatures(features);
 
       map.addSource("parcels", { type: "geojson", data: fc });
       map.addLayer({

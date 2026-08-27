@@ -1,0 +1,21 @@
+{
+  "name": "landstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Land Stack — integrated GIS-based Digital Public Infrastructure for land governance (SIH 2026). MERN + MapLibre monorepo: Express/Mongoose API (server) + React/Vite citizen portal & officer console (client).",
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -n server,client -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed",
+    "start": "npm --prefix server start",
+    "build": "npm --prefix client run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

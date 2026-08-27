@@ -1,84 +1,141 @@
-# Land Stack — Citizen Portal (Interactive Prototype)
+# Land Stack — GIS-based Digital Public Infrastructure for Land Governance
 
 **Land Stack** is an integrated, GIS-based **Digital Public Infrastructure (DPI) for land governance** in India, built for **Smart India Hackathon 2026** (Department of Land Resources problem statement).
 
-This folder contains the **first interactive demo** — a zero-backend, browser-runnable prototype of the flagship **"Citizen Search & Verify"** journey. It is meant to *show*, not tell: open one file and you can search a parcel, inspect every land-record layer tied to its ULPIN, and issue a verifiable ownership record.
+It is a **parcel-centric platform**: every land record — ownership, registration, zoning, encumbrance, tax, utilities — hangs off a single spatial identity, the **ULPIN** ("Bhu-Aadhaar"). This repo contains a full-stack **MERN + MapLibre** prototype: an Express/Mongoose API, a React citizen portal, and an officer console, plus the Standard Technical Document (PRD).
 
-> ⚠️ All data in this demo is **fictional**. Owner names, ULPINs, deed numbers and coordinates are invented for a mock Chandigarh pilot. Nothing here is a real land record.
+> ⚠️ **All data is fictional demonstration data — not a real land record.** Owner names, ULPINs, deed numbers and coordinates are invented for a mock Chandigarh pilot. Demo login credentials are intentionally exposed and are for demonstration only.
 
 ---
 
-## How to run
+## Two ways to run it
 
-No build step, no server, no install. **Just open `index.html` in any modern browser** (Chrome, Edge, Firefox, Safari).
+### A. Instant static demo (zero install)
+
+The fastest look at the citizen journey. No build, no server, no install — **just open `index.html`** in any modern browser.
 
 ```
 D:\SIH2026\index.html   ← double-click, or drag into a browser tab
 ```
 
-The map basemap tiles load from the internet (OpenStreetMap) and MapLibre GL JS loads from a CDN, so a network connection gives the full experience. If you are **offline, the parcels still render** on a plain background — the demo degrades gracefully.
+Basemap tiles and MapLibre load from the internet; offline, parcels still render on a plain background (graceful degradation).
+
+### B. Full-stack app (the real deliverable)
+
+The complete DPI: live API, consent-gated layers, workflows, verifiable certificates, geo-intelligence and an officer console.
+
+**Prerequisites:** Node.js 18+ and npm. **No database install needed** — the server auto-starts an in-memory MongoDB on boot.
+
+```bash
+# from the repo root (D:\SIH2026)
+npm run install:all     # installs root + server + client dependencies
+npm run dev             # starts API (:8080) and client (:5173) together
+```
+
+Then open **http://localhost:5173**. The API's interactive docs are at **http://localhost:8080/v1/docs**.
+
+That's it. On first boot the server spins up an in-memory MongoDB and seeds it with the mock Chandigarh dataset automatically. To use a **persistent** database instead, copy `server/.env.example` to `server/.env` and set `MONGODB_URI` (a local `mongodb://127.0.0.1:27017` or an Atlas connection string).
+
+<details>
+<summary>Running the two services separately</summary>
+
+```bash
+npm run dev:server      # API only, on :8080  (nodemon)
+npm run dev:client      # Vite dev server only, on :5173
+npm run seed            # re-seed the database explicitly
+npm run build           # production build of the client
+```
+The Vite dev server proxies `/v1`, `/health` and `/geoserver` to the API on `:8080`, so the client talks to the API with no CORS setup.
+</details>
 
 ---
 
-## What you can do in the demo
+## What you can do
 
-- **Search any parcel** by ULPIN, owner name, or address, with live autocomplete suggestions.
-- **Click a parcel on the map** to open its full record. Parcels are colour-coded by land use, with a legend.
-- **Read every layer around one parcel identity (ULPIN)** in a single panel:
-  - *Base* — parcel geometry, area, khasra, ULPIN
-  - *Essential* — ownership & shares, registration/deed, mutation status, zoning, encumbrance
-  - *Use-case* — property tax status, connected utilities
-- **See trust signals at a glance** — clear / mortgaged / disputed badges, plus a dispute-risk flag.
-- **Verify ownership & issue a record** — generates a certificate with a scannable (pseudo) QR and a unique record ID (`LS-VER-XXXXXXXX`). Print or copy it.
-- **Verify a record** — paste a record ID to confirm it was issued by the platform and see the parcel it certifies. Try the seeded IDs `LS-VER-7F3A9C2E` and `LS-VER-1B8D4402`.
-- **Switch language** — English / हिंदी toggle across the whole interface.
+**As a citizen (no login):**
+
+- **Explore the map** — every parcel is colour-coded by land use and keyed by its ULPIN.
+- **Search** by ULPIN, owner name, or address with live autocomplete.
+- **Open a parcel** to see its layered record: *Base* (geometry, area, ULPIN, ownership summary, zoning), and — where permitted — *Essential* (Record of Rights, registration, encumbrance) and *Use-case* (tax, utilities).
+- **Verify ownership & get a record** — issues a certificate with a scannable QR and a unique, independently-checkable record ID (`LS-VER-…`).
+- **Apply for a service** (mutation, certified copy, encumbrance certificate, correction, sub-division) and **track it** by request ID.
+- **Verify a record** — paste any `LS-VER-…` ID to confirm it was issued by the platform and detect tampering. Try `LS-VER-7F3A9C2E` or `LS-VER-1B8D4402`.
+- **Switch language** — English / हिंदी across the whole interface.
+
+**As an officer (Officer Console → sign in with a demo account):**
+
+- **Overview dashboard** — parcels by dispute risk / land use, service-request pipeline, geo-flags, tax arrears, active consents.
+- **Workflow queue** — advance service requests through the mutation lifecycle; completion auto-applies the mutation and issues a fresh certificate.
+- **Geo-intelligence** — run a change-detection scan (mock imagery diff), score a parcel's dispute risk factor-by-factor, and triage flags.
+- **Consent registry** — issue a scoped, time-boxed consent token, then paste it into the citizen Parcel Explorer to unlock consent-gated layers; revoke at any time.
+- **Schema mapping** — transform a legacy record into the canonical parcel schema with a per-field trace.
+- **Layer catalogue** and **immutable audit trail** (admin / national steward only).
+
+Demo accounts are listed one-click in the console's sign-in screen (they load from `GET /v1/auth/demo-users`).
 
 ---
 
 ## How this is different from Bhulekh
 
-Bhulekh (and the state RoR portals) are **read-only, state-siloed, text-record viewers**: you look up a record of rights in one department's database, in one state's format, and that is where it ends. Land Stack is designed as **shared infrastructure**, not another viewer:
+Bhulekh and state RoR portals are **read-only, state-siloed, text-record viewers**. Land Stack is designed as **shared infrastructure**:
 
 | | Bhulekh / state RoR portals | **Land Stack** |
 |---|---|---|
-| **Core object** | A text record of rights | A **parcel identity (ULPIN)** that everything links to |
-| **Layers** | Ownership text only | **Base + Essential + Use-case** layers unified on one parcel |
+| **Core object** | A text record of rights | A **parcel identity (ULPIN)** everything links to |
+| **Layers** | Ownership text only | **Base + Essential + Use-case** unified on one parcel |
 | **Map** | Separate (BhuNaksha), weakly linked | **Map-first**; every attribute hangs off the geometry |
-| **Reach** | Per-state, per-department silos | **Federated DPI** with open APIs across departments/states |
-| **Citizen output** | View / print a record | **Verifiable ownership record** with an independently checkable ID |
-| **Trust** | Implicit | **Explicit** — encumbrance, dispute-risk and tax status surfaced up front |
-
-The demo makes the differentiator tangible: one click on a parcel shows *ownership + registration + zoning + encumbrance + tax + utilities* resolved through a single ULPIN — the "parcel-centric DPI" idea that Bhulekh does not attempt.
+| **Access control** | All-or-nothing, per portal | **Consent-gated** layers (token *or* staff role), DPDP-aligned |
+| **Reach** | Per-state, per-department silos | **Federated DPI** with open APIs + OGC (WMS/WFS) |
+| **Citizen output** | View / print a record | **Verifiable, tamper-evident record** with a checkable ID |
+| **Workflows** | Out of scope | **Mutation lifecycle** with auto-apply + certificate issuance |
+| **Intelligence** | None | **Change detection + dispute-risk scoring** |
+| **Trust** | Implicit | **Explicit** — encumbrance, dispute-risk, tax surfaced up front + immutable audit |
 
 ---
 
-## Project files
+## Architecture
 
 ```
 SIH2026/
-├─ index.html          # the app shell (topbar, map, panel, modals)
-├─ assets/
-│  ├─ app.js           # all interaction logic: map, search, panel, verify, i18n
-│  ├─ data.js          # fictional mock data → window.LANDSTACK (12 parcels)
-│  └─ styles.css       # "cadastral blueprint" design system
-└─ README.md           # this file
+├─ package.json            # root scripts (install:all, dev, seed, build) via concurrently
+│
+├─ server/                 # Express + Mongoose API  (CommonJS)
+│  └─ src/
+│     ├─ index.js          # boot: connect DB → auto-seed → listen (:8080)
+│     ├─ db.js             # MongoDB, with zero-setup in-memory fallback
+│     ├─ models/           # Parcel, User, ServiceRequest, Certificate, Consent,
+│     │                    #   GeoIntel, AuditLog, LayerCatalogue, MappingProfile
+│     ├─ middleware/       # JWT auth + RBAC, consent-gating, audit, errors
+│     ├─ routes/           # parcels, ulpin, layers, mapping, service-requests,
+│     │                    #   consent, certificates, geo-intel, audit, OGC, OpenAPI
+│     ├─ utils/            # ULPIN, mapping engine, geo-intel, certificate hashing
+│     └─ seed/             # mock Chandigarh dataset + seeding
+│
+├─ client/                 # React 18 + Vite + MapLibre GL  (ES modules)
+│  └─ src/
+│     ├─ main.jsx          # providers: Router › Lang › Auth › Toast › App
+│     ├─ App.jsx           # top bar + routes  (/  /verify  /console)
+│     ├─ pages/            # CitizenPortal, VerifyPage, Console
+│     ├─ components/       # MapView, SearchBox, ParcelPanel, Certificate, modals
+│     ├─ api.js            # typed client over the API (bearer + consent headers)
+│     ├─ auth.jsx / lang.jsx / ui.jsx   # context providers
+│     └─ lib/ , i18n.js , styles.css
+│
+├─ index.html + assets/    # the zero-backend static demo (option A)
+├─ Land-Stack-PRD.html     # Standard Technical Document / PRD
+└─ DEPLOY.md               # GitHub push + Pages deploy guide (static demo)
 ```
 
-Data is loaded via `<script src>` (not `fetch`) specifically so `index.html` works from `file://` with no CORS errors.
+**Backend modules (per the PRD):** M1 parcel service · M2 ULPIN registry · M3 layer catalogue · M4 OGC + OpenAPI · M5 consent · M6 schema mapping · M7 service requests · M8 mutation workflow · M9 geo-intelligence. Cross-cutting: FR-07 verifiable certificates, FR-10 immutable audit, FR-11 workflow auto-apply, FR-13 change detection, FR-14 dispute-risk scoring.
+
+**Stack:** Node/Express 4, MongoDB/Mongoose 8, JWT (bcryptjs) + API keys · React 18, Vite 5, React Router 6, MapLibre GL 4. The API also speaks **OGC WMS/WFS** and publishes an **OpenAPI** spec at `/v1/docs`.
 
 ---
 
-## Roadmap — from demo to DPI
+## Roadmap beyond the prototype
 
-This prototype is the **client-side proof of the citizen experience**. The intended build-out follows the PRD:
-
-1. **MERN + geospatial backend** — Express/Node API over MongoDB for records and **PostGIS** for parcel geometry; **GeoServer** publishing OGC **WMS/WFS** layers that MapLibre consumes.
-2. **Real ULPIN registry & interoperability** — open, versioned APIs with metadata catalogue, RBAC, audit trails; integration hooks for DigiLocker / API Setu and consent-first access (DPDP Act aligned).
-3. **More modules** — parcel explorer for planners, department/admin dashboard, mutation & transaction workflow, encumbrance timeline.
-4. **AI/ML & geospatial intelligence** — satellite change detection (unauthorised construction / encroachment), predictive dispute-risk scoring, automated valuation.
-
-See `Land-Stack-PRD.html` (produced separately) for the full product requirements and the Standard Technical Document (API/interoperability/data-schema/GIS/security/UI standards).
+Real PostGIS geometry store + GeoServer tile publishing; DigiLocker / API Setu integration for identity and document pull; production RBAC and consent artifacts; and expanded AI/ML (automated valuation, encroachment detection at scale). See `Land-Stack-PRD.html` for the full requirements and Standard Technical Document.
 
 ---
 
-*Prototype for Smart India Hackathon 2026 · Department of Land Resources problem statement · demonstration data only.*
+*Prototype for Smart India Hackathon 2026 · Department of Land Resources problem statement · fictional demonstration data only — not a real land record.*
