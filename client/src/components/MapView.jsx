@@ -39,13 +39,14 @@ function fillColorExpr() {
   return expr;
 }
 
-const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeatures }, ref) {
+const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeatures, onPointInspect }, ref) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const byUlpin = useRef(new Map());
   const hoverPopup = useRef(null);
   const hoverId = useRef(null);
   const selRef = useRef(null);
+  const pinMarkerRef = useRef(null);
   const [error, setError] = useState("");
 
   // Imperative API for the parent (search → fly + select).
@@ -53,6 +54,7 @@ const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeature
     selectUlpin(ulpin, fly = true) {
       const feat = byUlpin.current.get(ulpin);
       if (!feat) return;
+      clearPin();
       applySelected(ulpin);
       if (fly && feat.properties.centroid) {
         const c = feat.properties.centroid;
@@ -63,7 +65,24 @@ const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeature
     },
     getFeature: (ulpin) => byUlpin.current.get(ulpin),
     allFeatures: () => Array.from(byUlpin.current.values()),
+    clearInspectPin: () => clearPin(),
   }));
+
+  function clearPin() {
+    if (pinMarkerRef.current) {
+      pinMarkerRef.current.remove();
+      pinMarkerRef.current = null;
+    }
+  }
+
+  function dropPin(lngLat) {
+    clearPin();
+    const el = document.createElement("div");
+    el.className = "inspect-pin";
+    pinMarkerRef.current = new maplibregl.Marker({ element: el })
+      .setLngLat(lngLat)
+      .addTo(mapRef.current);
+  }
 
   function applySelected(ulpin) {
     const map = mapRef.current;
@@ -175,10 +194,25 @@ const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeature
       });
       map.on("click", "parcels-fill", (e) => {
         if (!e.features.length) return;
+        e._parcelHandled = true;
+        clearPin();
         const ulpin = e.features[0].id;
         const raw = byUlpin.current.get(ulpin);
         applySelected(ulpin);
         onSelect && onSelect(raw || e.features[0]);
+      });
+
+      // Map-level click: fires for empty areas (not on a parcel).
+      map.on("click", (e) => {
+        // Skip if a parcel was clicked (handled above).
+        if (e._parcelHandled) return;
+        // Check if click was on a parcel feature.
+        const parcelFeatures = map.queryRenderedFeatures(e.point, { layers: ["parcels-fill"] });
+        if (parcelFeatures && parcelFeatures.length) return;
+
+        applySelected(null);
+        dropPin(e.lngLat);
+        onPointInspect && onPointInspect(e.lngLat);
       });
     });
 
@@ -187,7 +221,10 @@ const MapView = forwardRef(function MapView({ onSelect, selectedUlpin, onFeature
       if (ev && ev.error && /tile/i.test(ev.error.message || "")) return;
     });
 
-    return () => map.remove();
+    return () => {
+      clearPin();
+      map.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

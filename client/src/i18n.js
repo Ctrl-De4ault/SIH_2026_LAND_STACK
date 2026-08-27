@@ -150,6 +150,21 @@ export const STRINGS = {
     revoke: "Revoke",
     issueConsent: "Issue consent token",
 
+    // point inspector
+    pointInspect: "Location Inspector",
+    piCoordinates: "Coordinates",
+    piAddress: "Address",
+    piAddressLoading: "Looking up address…",
+    piAddressNone: "No address data available",
+    piNearestParcel: "Nearest registered parcel",
+    piDistance: "Distance",
+    piEstimatedZone: "Estimated zone",
+    piGoToParcel: "Go to parcel →",
+    piNoParcelNearby: "No parcels found nearby",
+    piNearbyLandUse: "Land use nearby",
+    piParcelsInRadius: "parcels within 1 km",
+    piClickHint: "Click anywhere on the map to inspect a location",
+
     // toasts
     tCopied: "Record ID copied to clipboard",
     tVerified: "Ownership verified — record issued",
@@ -292,6 +307,20 @@ export const STRINGS = {
     scoreDispute: "विवाद जोखिम स्कोर करें",
     revoke: "रद्द करें",
     issueConsent: "सहमति टोकन जारी करें",
+
+    pointInspect: "स्थान निरीक्षक",
+    piCoordinates: "निर्देशांक",
+    piAddress: "पता",
+    piAddressLoading: "पता खोज रहे हैं…",
+    piAddressNone: "पता डेटा उपलब्ध नहीं",
+    piNearestParcel: "निकटतम पंजीकृत भूखंड",
+    piDistance: "दूरी",
+    piEstimatedZone: "अनुमानित ज़ोन",
+    piGoToParcel: "भूखंड पर जाएँ →",
+    piNoParcelNearby: "पास में कोई भूखंड नहीं मिला",
+    piNearbyLandUse: "निकट भू-उपयोग",
+    piParcelsInRadius: "1 कि.मी. के भीतर भूखंड",
+    piClickHint: "स्थान निरीक्षण के लिए मानचित्र पर कहीं भी क्लिक करें",
 
     tCopied: "रिकॉर्ड ID कॉपी हो गया",
     tVerified: "स्वामित्व सत्यापित — रिकॉर्ड जारी",
