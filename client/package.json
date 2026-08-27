@@ -1,0 +1,22 @@
+{
+  "name": "landstack-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Land Stack — citizen portal + officer console (React + Vite + MapLibre)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173"
+  },
+  "dependencies": {
+    "maplibre-gl": "^4.7.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "vite": "^5.4.8"
+  }
+}
