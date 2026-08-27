@@ -4,7 +4,7 @@
  * ULPIN utilities — the Unique Land Parcel Identification Number is the
  * 14-significant-char "Bhu-Aadhaar" that keys every parcel. Format:
  *
- *   CH-01-0007-0400-2854
+ *   UP-21-0007-0400-5374
  *   │  │  │    │    └── 4-char check block (derived from the base)
  *   │  │  │    └─────── parcel serial (4)
  *   │  │  └──────────── revenue village code (4)
@@ -25,7 +25,7 @@ function checkBlock(str) {
 }
 
 /** Mint a new ULPIN from its administrative components. */
-function mint({ stateCode = "CH", district = "01", village, parcel }) {
+function mint({ stateCode = "UP", district = "21", village, parcel }) {
   const v = String(village).padStart(4, "0");
   const p = String(parcel).padStart(4, "0");
   const base = `${stateCode}-${district}-${v}-${p}`;

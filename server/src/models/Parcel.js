@@ -35,7 +35,7 @@ const AreaSchema = new Schema(
   {
     value: { type: Number, required: true }, // canonical value
     unit: { type: String, default: "sqm" }, // canonical unit
-    local: String, // human/local measure e.g. "1.8 kanal", "10 marla"
+    local: String, // human/local measure e.g. "1 bigha 5.9 biswa", "15.0 biswa"
   },
   { _id: false }
 );
@@ -125,7 +125,7 @@ const ParcelSchema = new Schema(
     ulpin: { type: String, required: true, unique: true, index: true },
 
     // Administrative context
-    state: { type: String, default: "Chandigarh (UT)" },
+    state: { type: String, default: "Uttar Pradesh" },
     district: String,
     revenueUnit: String, // village / revenue estate
     village: String,

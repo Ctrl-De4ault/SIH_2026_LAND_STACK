@@ -13,7 +13,7 @@ export const STRINGS = {
     navDocs: "API Docs",
     signIn: "Sign in",
     signOut: "Sign out",
-    pilot: "Chandigarh pilot",
+    pilot: "Prayagraj pilot",
     demoData: "Fictional demonstration data — not a real land record.",
 
     // search
@@ -48,6 +48,7 @@ export const STRINGS = {
     docNo: "Document no.",
     regDate: "Registered",
     mutation: "Last mutation",
+    rorDetail: "Record of Rights detail",
     zone: "Zone code",
     taxStatus: "Status",
     paidTill: "Paid up to",
@@ -182,7 +183,7 @@ export const STRINGS = {
     navDocs: "API दस्तावेज़",
     signIn: "साइन इन",
     signOut: "साइन आउट",
-    pilot: "चंडीगढ़ पायलट",
+    pilot: "प्रयागराज पायलट",
     demoData: "काल्पनिक प्रदर्शन डेटा — वास्तविक भू-अभिलेख नहीं।",
 
     searchPlaceholder: "ULPIN, स्वामी का नाम या पता खोजें…",
@@ -213,6 +214,7 @@ export const STRINGS = {
     docNo: "दस्तावेज़ सं.",
     regDate: "पंजीकृत",
     mutation: "अंतिम दाखिल-खारिज",
+    rorDetail: "अधिकार अभिलेख विवरण",
     zone: "ज़ोन कोड",
     taxStatus: "स्थिति",
     paidTill: "भुगतान तक",

@@ -19,7 +19,18 @@ The deliverables are:
 1. A **Standard Technical Document / PRD** — `Land-Stack-PRD.html` (done).
 2. A **static citizen-portal prototype** — `index.html` + `assets/` (done).
 3. A **full-stack MERN application** implementing every PRD module and functional
-   requirement — `server/` (done) + `client/` (in progress).
+   requirement — `server/` (done) + `client/` (done).
+4. A **free-tier deployment path** — `DEPLOYMENT.md` + `render.yaml` + `vercel.json` (done).
+
+### The demonstration dataset
+
+The fictional cadastre is a **mock Prayagraj (Uttar Pradesh)** pilot: 12 parcels across four
+revenue blocks — **Civil Lines, Georgetown, Tagore Town, Rajapur** — laid out as irregular
+mohalla blocks (each with its own origin, street bearing and lane rhythm), not a uniform
+grid. Areas are computed from the actual polygon and reported in m², hectares and local UP
+units (**bigha / biswa**, 1 bigha = 20 biswa ≈ 2529 m²). `server/src/seed/seedData.js` and
+`assets/data.js` generate **byte-identical** geometry and ULPINs, so the static demo and the
+full stack always agree.
 
 ### The core differentiator (do not lose this)
 
@@ -54,10 +65,14 @@ SIH2026/
 ├── CONTEXT.md              ← this file
 ├── Land-Stack-PRD.html     PRD / Standard Technical Document
 ├── README.md               prototype readme
-├── DEPLOY.md               GitHub push + Pages deploy guide
+├── DEPLOY.md               GitHub push + Pages deploy guide (static demo only)
+├── DEPLOYMENT.md           full-stack free-tier guide (Atlas + Render + Vercel)
+├── render.yaml             Render blueprint for the backend
+├── vercel.json             Vercel build + `/v1` proxy for the frontend
+├── package.json            root scripts (concurrently runs server + client)
 ├── index.html              static citizen-portal prototype (file:// runnable)
 ├── assets/
-│   ├── data.js             mock parcel data (12 Chandigarh parcels) + ULPIN algo
+│   ├── data.js             mock parcel data (12 Prayagraj parcels) + ULPIN algo
 │   ├── app.js              prototype logic + EN/HI i18n + cert/QR
 │   └── styles.css          "refined-green" design system
 ├── server/                 ← MERN backend (COMPLETE)
@@ -69,17 +84,24 @@ SIH2026/
 │       ├── middleware/ (auth, audit, consent, error)
 │       ├── routes/   (11 route files + aggregator index.js)
 │       ├── utils/    (jwt, ulpin, ids, parcelView, mappingEngine, geoIntel, …)
-│       └── seed/     (seedData.js ports the prototype; seed.js runs it)
-└── client/                 ← React + Vite frontend (SCAFFOLD DONE, UI PENDING)
+│       └── seed/     (seedData.js = the Prayagraj cadastre; seed.js runs it)
+└── client/                 ← React + Vite frontend (COMPLETE)
     ├── package.json  vite.config.js  index.html
     └── src/
-        ├── api.js          fetch wrapper covering every server route
-        ├── i18n.js         EN/HI strings (ported + extended)
-        ├── lang.jsx        language context/provider
-        ├── auth.jsx        auth context/provider (JWT, role)
-        ├── styles.css      ported design system + console styles
+        ├── main.jsx       mounts App inside Auth + Lang providers + Router
+        ├── App.jsx        routes: / portal, /verify, /console
+        ├── api.js         fetch wrapper covering every server route
+        ├── ui.jsx         BrandMark, TopBar, Modal, toast context
+        ├── i18n.js        EN/HI strings (ported + extended)
+        ├── lang.jsx       language context/provider
+        ├── auth.jsx       auth context/provider (JWT, role)
+        ├── styles.css     ported design system + console styles
+        ├── pages/         CitizenPortal, VerifyPage, Console
+        ├── components/    MapView, SearchBox, ParcelPanel, LocationPanel,
+        │                  Certificate, CitizenModals
         └── lib/
-            ├── format.js   land-use colours, date/area/money formatters
+            ├── constants.js
+            ├── format.js   land-use colours, map framing, formatters
             └── qr.js       deterministic pseudo-QR (ported)
 ```
 
@@ -105,10 +127,12 @@ works with **no external MongoDB required**.
 ## 4. Domain model
 
 ### ULPIN (the spatial key)
-14-significant-character identifier, formatted `CH-01-0007-0400-2854`
+14-significant-character identifier, formatted `UP-21-0007-0400-5374`
 (`state-district-village-parcel-check`). The 4-char check block is a hash of the base.
 `server/src/utils/ulpin.js` mints and validates them (tamper-evident). Seeded ULPINs match
-the static prototype's verify registry (e.g. `LS-VER-7F3A9C2E → CH-01-0007-0400-2854`).
+the static prototype's verify registry (e.g. `LS-VER-7F3A9C2E → UP-21-0007-0400-5374`).
+Village codes map to the four revenue blocks: `0007` Civil Lines, `0008` Georgetown,
+`0009` Tagore Town, `0010` Rajapur.
 
 ### Three-layer spatial model (embedded in each Parcel)
 - **Base** (public): cadastre geometry + ULPIN + area + centroid.
@@ -142,7 +166,7 @@ guards staff endpoints.
 | —      | Audit trail                 | `GET /v1/audit` (admin/steward, immutable)                                    | FR-10 |
 
 **Verification done (pure-JS self-tests, all passing):**
-- ULPIN mint/validate matches prototype (`CH-01-0007-0400-2854`); tampering detected.
+- ULPIN mint/validate matches prototype (`UP-21-0007-0400-5374`); tampering detected.
 - Mapping engine transforms sample input → exact expected output (10 fields).
 - ID/hash helpers are stable and tamper-sensitive.
 - Dispute-risk scoring: seeded parcel[3] → **high (1.0)** with itemised factors; clean
@@ -151,38 +175,36 @@ guards staff endpoints.
 
 ---
 
-## 6. Client status — SCAFFOLD DONE, UI PENDING 🚧
+## 6. Client status — COMPLETE ✅
 
-**Done (`client/`):**
+**Foundations (`client/`):**
 - `package.json`, `vite.config.js` (proxies `/v1`, `/geoserver`, `/health` → `:8080`),
-  `index.html`.
+  `index.html`. No `base` override and no custom `outDir` — required for the Vercel deploy.
 - `src/api.js` — typed fetch wrapper for **every** server route, JWT + consent-token
-  handling, error normalisation.
+  handling, error normalisation. Uses **relative** paths (`/v1/...`) so the same build works
+  locally and behind the Vercel proxy.
 - `src/auth.jsx` — auth context (login/logout/me, `isStaff`), token persisted in
   localStorage.
-- `src/lang.jsx` + `src/i18n.js` — EN/HI, ~120 keys, ported from prototype and extended
-  for the console/consent/geo-intel screens.
-- `src/lib/format.js` — land-use colour ramp, date/area/money formatters, risk classes.
+- `src/lang.jsx` + `src/i18n.js` — EN/HI, ~120 keys.
+- `src/lib/format.js` — land-use colour ramp, map framing, date/area/money formatters,
+  risk classes, haversine helpers for the point inspector.
 - `src/lib/qr.js` — deterministic pseudo-QR for the certificate.
-- `src/styles.css` — full "refined-green" design system + console styles (tabs, tables,
-  KPI cards, distribution bars, mapping playground, login).
+- `src/styles.css` — full "refined-green" design system + console styles.
 
-**Still to build (tasks #26, #27):**
-- `src/main.jsx` — mounts `<App/>` inside `AuthProvider` + `LangProvider` + Router,
-  imports `styles.css` and `maplibre-gl/dist/maplibre-gl.css`.
-- `src/App.jsx` — routes: `/` citizen portal, `/verify`, `/console`.
-- Shared components: `BrandMark`, `TopBar` (brand + nav + search + lang + sign-in),
-  `Modal`, `Toast`/toast context.
-- **Citizen portal** (`pages/CitizenPortal.jsx`, task #26): MapLibre parcel explorer
-  (OSM raster basemap, land-use fill, hover popup, click-to-select), search with
-  suggestions, `ParcelPanel` with consent-gated layer blocks + unlock-by-token, certificate
-  issue + `VerifyModal`, service-request file + track.
-- **Officer console** (`pages/Console.jsx`, task #27): login, dashboard KPIs
-  (`/v1/geo-intel/dashboard`), workflow queue with transitions/assign, geo-intel flags +
-  change-scan + dispute scoring, consent registry, audit trail, schema-mapping playground,
-  layer catalogue, link to `/v1/docs`.
+**Screens built:**
+- `src/main.jsx` → `AuthProvider` + `LangProvider` + Router; `src/App.jsx` routes
+  `/` citizen portal, `/verify`, `/console`.
+- `src/ui.jsx` — `BrandMark`, `TopBar` (brand + nav + lang + sign-in), `Modal`, toasts.
+- **Citizen portal** (`pages/CitizenPortal.jsx`): MapLibre parcel explorer, `SearchBox`
+  with suggestions, `ParcelPanel` (consent-gated layer blocks + unlock-by-token, each field
+  rendered exactly once), `LocationPanel` point inspector (reverse geocode + nearest parcel
+  + nearby land-use mix), certificate issue, service-request file + track.
+- **Officer console** (`pages/Console.jsx`): login, dashboard KPIs, workflow queue with
+  transitions/assign, geo-intel flags + change-scan + dispute scoring, consent registry,
+  audit trail, schema-mapping playground, layer catalogue, link to `/v1/docs`.
+- **Verify page** (`pages/VerifyPage.jsx`): public `LS-VER-…` lookup, tamper detection.
 
-**Brand mark SVG** (three stacked survey sheets), reuse in TopBar and certificate:
+**Brand mark SVG** (three stacked survey sheets), reused in TopBar and certificate:
 ```html
 <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke-width="2">
   <path d="M6 24 L20 17 L34 24 L20 31 Z" fill="#C9942B" stroke="#C9942B"/>
@@ -190,15 +212,21 @@ guards staff endpoints.
   <path d="M6 12 L20 5 L34 12 L20 19 Z" fill="#12463C" stroke="#12463C"/>
 </g></svg>
 ```
-Map framing from prototype: center `[76.785, 30.7345]`, zoom `15.3`; OSM raster with
-`raster-saturation: -0.68, raster-opacity: 0.86`. Land-use colours live in
-`client/src/lib/format.js`.
+Map framing: center `[81.8362, 25.4516]`, zoom `15.6` (the Prayagraj cadastre spans about
+650 m × 645 m); OSM raster with `raster-saturation: -0.68, raster-opacity: 0.86`. Both the
+centre and the land-use colours live in `client/src/lib/format.js` — change them there only.
 
 ---
 
 ## 7. How to run
 
-**Backend** (from `server/`):
+**Both at once** (from the repo root):
+```bash
+npm install               # installs concurrently
+npm run dev               # server on :8080 + client on :5173
+```
+
+**Backend only** (from `server/`):
 ```bash
 npm install
 cp .env.example .env      # optional; defaults work out of the box
@@ -206,13 +234,21 @@ npm run dev               # nodemon on http://localhost:8080  (in-memory Mongo +
 # API docs: http://localhost:8080/v1/docs
 ```
 
-**Frontend** (from `client/`, once UI is built):
+**Frontend only** (from `client/`):
 ```bash
 npm install
 npm run dev               # Vite on http://localhost:5173, proxies API to :8080
 ```
 
-A root-level `package.json` with `concurrently` to run both is planned (task #28).
+**Static demo, zero install:** open `index.html` directly (works from `file://`).
+
+**Re-seed after changing the cadastre:** the ULPINs are derived from the block/parcel codes,
+so editing `seedData.js` changes them. Run `npm run seed` in `server/` (or drop the database)
+so old parcels do not linger alongside new ones.
+
+**Deploy online (free tier):** follow `DEPLOYMENT.md` — MongoDB Atlas M0 + Render (backend,
+persistent process so boot auto-seed works) + Vercel (frontend, with a `/v1` rewrite so the
+browser stays same-origin and no CORS or client change is needed).
 
 ---
 
@@ -232,31 +268,46 @@ Password for **all** demo accounts: `landstack123`
 | admin@landstack.in       | admin            |
 | steward@landstack.in     | national_steward |
 
-Pre-seeded demo objects: certificates `LS-VER-7F3A9C2E`, `LS-VER-1B8D4402`; consent token
-`LS-CONSENT-DEMO01` (parcel[0], scope RoR+encumbrance); service request `LS-SR-DEMO0001`
-(mutation on parcel[3], `under_review`).
+Pre-seeded demo objects: certificates `LS-VER-7F3A9C2E` (parcel[0] → `UP-21-0007-0400-5374`,
+Rakesh Chandra Dwivedi) and `LS-VER-1B8D4402` (parcel[8] → `UP-21-0010-0408-7710`,
+Shalini Srivastava); consent token `LS-CONSENT-DEMO01` (parcel[0], scope RoR+encumbrance);
+service request `LS-SR-DEMO0001` (mutation on parcel[3] → `UP-21-0008-0403-4528`,
+`under_review`).
+
+Good things to try in a demo: search `Shalini` or `UP-21`; open the disputed Georgetown
+parcel `UP-21-0008-0403-4528` (high dispute risk, pending inheritance mutation, tax arrears);
+unlock parcel[0]'s Essential layers with `LS-CONSENT-DEMO01`.
 
 ---
 
 ## 9. Sandbox constraints (why verification is limited here)
 
-The build environment **cannot reach the npm registry** (403) and has **no MongoDB, no
-esbuild/babel, no JSX build tooling**. Therefore in-session we **cannot** `npm install`,
-run the stack, or compile JSX. Verification strategy used:
+The build environment **cannot reach the npm registry** (403) and has **no MongoDB**, so
+in-session we cannot `npm install` or actually boot the stack. `client/node_modules` was
+installed on Windows, so the bundled `esbuild` binary is `win32-x64` and will not execute
+in the Linux sandbox — but `@babel/parser` inside it is pure JS and **is** usable.
+Verification strategy used:
 - Every plain-`.js` file is checked with `node --check`.
-- Dependency-free modules are executed directly in Node to prove correctness.
-- JSX is written to idiomatic conventions and delimiter/tag-balance checked.
+- Every file under `client/src` (19 files, JS + JSX) is parsed with
+  `@babel/parser` using the `jsx` plugin — all parse cleanly.
+- Every `t("…")` key used in the client is checked against `i18n.js`: 112 keys used,
+  139 defined, EN and HI in exact parity, nothing missing.
+- Dependency-free modules are executed directly in Node to prove correctness (ULPIN,
+  mapping engine, dispute scoring, seed geometry incl. a SAT no-overlap test).
 
 The user runs `npm install` / `npm run dev` on their own machine. Code is written to be
 correct and conventional so it runs there unchanged.
 
 ---
 
-## 10. Remaining task list
+## 10. Remaining work
 
-- **#26** Client: citizen portal (map, search, parcel panel w/ consent gating, verify,
-  service requests).
-- **#27** Client: officer console (login, dashboard KPIs, workflow queue, geo-intel,
-  consent registry, audit, schema mapping, API docs link).
-- **#28** Root scripts (`concurrently`), `README`/run docs, final `node --check` sweep +
-  git commit.
+Nothing is outstanding on the build itself — PRD, static prototype, server, client and the
+deployment path are all done. Open items are all "run it somewhere real":
+
+- Run `npm install && npm run dev` locally (the sandbox that authored this cannot reach the
+  npm registry, so the stack has never actually been booted here).
+- Follow `DEPLOYMENT.md` to put it online, replacing the three placeholder Render URLs in
+  `vercel.json` with the real service URL before pushing.
+- Optional polish ideas: a second mapping profile for a different state's legacy export,
+  parcel-split/merge lineage demo, and a rural block to sit alongside the four urban ones.

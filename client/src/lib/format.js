@@ -18,9 +18,9 @@ export function landUseColor(landUse) {
   return LANDUSE_COLORS[landUse] || LANDUSE_FALLBACK;
 }
 
-// Map view defaults (match the prototype's framing of the Chandigarh pilot).
-export const MAP_CENTER = [76.785, 30.7345];
-export const MAP_ZOOM = 15.3;
+// Map view defaults — framed on the fictional Prayagraj (UP) pilot cadastre.
+export const MAP_CENTER = [81.8362, 25.4516];
+export const MAP_ZOOM = 15.6;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

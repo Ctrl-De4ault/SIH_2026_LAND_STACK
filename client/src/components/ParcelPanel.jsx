@@ -155,9 +155,7 @@ export default function ParcelPanel({ feature, open, onClose, onVerify, onApply,
                 <h4>{t("spatial")}</h4>
               </div>
               <div className="lb">
-                <Kv k={t("landUse")} v={props.landUse || (detail && detail.landUse) || "—"} />
                 <Kv k={t("area")} v={fmtArea(detail ? detail.area : props.area)} />
-                <Kv k={t("crs")} v={(detail && detail.crs) || "EPSG:4326"} mono />
                 {detail && detail.legacyIds && detail.legacyIds.length ? (
                   <Kv
                     k={t("khasra")}
@@ -167,6 +165,7 @@ export default function ParcelPanel({ feature, open, onClose, onVerify, onApply,
                     mono
                   />
                 ) : null}
+                <Kv k={t("crs")} v={(detail && detail.crs) || "EPSG:4326"} mono />
               </div>
             </div>
 
@@ -253,13 +252,12 @@ export default function ParcelPanel({ feature, open, onClose, onVerify, onApply,
             <div className="layer">
               <div className="lh">
                 <span className="tier">{t("essential")}</span>
-                <h4>{t("mutation")}</h4>
+                <h4>{t("rorDetail")}</h4>
               </div>
               <div className="lb">
                 {layers.ror && !layers.ror.protected ? (
                   <>
                     <Kv k="Khata" v={layers.ror.khataNo || "—"} mono />
-                    <Kv k="Khasra" v={layers.ror.khasraNo || "—"} mono />
                     <Kv k={t("mutation")} v={fmtDate(layers.ror.mutationDate)} />
                     <Kv k={t("taxStatus")} v={titleCase(layers.ror.mutationStatus) || "—"} />
                     {layers.ror.tenancy ? <Kv k="Tenancy" v={titleCase(layers.ror.tenancy)} /> : null}

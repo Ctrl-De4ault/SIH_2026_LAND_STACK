@@ -26,7 +26,7 @@ const FieldMapSchema = new Schema(
 const MappingProfileSchema = new Schema(
   {
     key: { type: String, required: true, unique: true, index: true },
-    sourceName: { type: String, required: true }, // "Chandigarh legacy RoR"
+    sourceName: { type: String, required: true }, // "Uttar Pradesh legacy RoR"
     sourceSystem: String, // originating system / format
     description: String,
     fieldMap: { type: [FieldMapSchema], default: [] },

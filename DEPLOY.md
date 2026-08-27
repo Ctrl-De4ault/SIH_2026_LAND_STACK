@@ -66,7 +66,7 @@ https://<YOUR-USERNAME>.github.io/land-stack/Land-Stack-PRD.html
 ## Verifying it works
 
 - The map loads 12 colour-coded parcels. Click one → the record panel slides in.
-- Search `Harpreet` or `CH-01` → autocomplete suggestions appear.
+- Search `Shalini` or `UP-21` → autocomplete suggestions appear.
 - Open a parcel → **Verify ownership** → a certificate with a QR + `LS-VER-…` ID.
 - **Verify a record** → paste `LS-VER-7F3A9C2E` → shows as valid.
 

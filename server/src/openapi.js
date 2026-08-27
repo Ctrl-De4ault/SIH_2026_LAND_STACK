@@ -52,7 +52,7 @@ function buildSpec(baseUrl) {
         Parcel: {
           type: "object",
           properties: {
-            ulpin: { type: "string", example: "CH-01-0007-0400-2854" },
+            ulpin: { type: "string", example: "UP-21-0007-0400-5374" },
             state: { type: "string" },
             sector: { type: "string" },
             landUse: { type: "string" },

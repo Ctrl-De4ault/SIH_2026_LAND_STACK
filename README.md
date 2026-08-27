@@ -4,7 +4,7 @@
 
 It is a **parcel-centric platform**: every land record — ownership, registration, zoning, encumbrance, tax, utilities — hangs off a single spatial identity, the **ULPIN** ("Bhu-Aadhaar"). This repo contains a full-stack **MERN + MapLibre** prototype: an Express/Mongoose API, a React citizen portal, and an officer console, plus the Standard Technical Document (PRD).
 
-> ⚠️ **All data is fictional demonstration data — not a real land record.** Owner names, ULPINs, deed numbers and coordinates are invented for a mock Chandigarh pilot. Demo login credentials are intentionally exposed and are for demonstration only.
+> ⚠️ **All data is fictional demonstration data — not a real land record.** Owner names, ULPINs, khasra numbers, deed numbers and coordinates are invented for a mock **Prayagraj (Uttar Pradesh)** pilot. Demo login credentials are intentionally exposed and are for demonstration only.
 
 ---
 
@@ -34,7 +34,7 @@ npm run dev             # starts API (:8080) and client (:5173) together
 
 Then open **http://localhost:5173**. The API's interactive docs are at **http://localhost:8080/v1/docs**.
 
-That's it. On first boot the server spins up an in-memory MongoDB and seeds it with the mock Chandigarh dataset automatically. To use a **persistent** database instead, copy `server/.env.example` to `server/.env` and set `MONGODB_URI` (a local `mongodb://127.0.0.1:27017` or an Atlas connection string).
+That's it. On first boot the server spins up an in-memory MongoDB and seeds it with the mock Prayagraj dataset automatically. To use a **persistent** database instead, copy `server/.env.example` to `server/.env` and set `MONGODB_URI` (a local `mongodb://127.0.0.1:27017` or an Atlas connection string).
 
 <details>
 <summary>Running the two services separately</summary>
@@ -116,7 +116,7 @@ SIH2026/
 │     ├─ routes/           # parcels, ulpin, layers, mapping, service-requests,
 │     │                    #   consent, certificates, geo-intel, audit, OGC, OpenAPI
 │     ├─ utils/            # ULPIN, mapping engine, geo-intel, certificate hashing
-│     └─ seed/             # mock Chandigarh dataset + seeding
+│     └─ seed/             # mock Prayagraj dataset + seeding
 │
 ├─ client/                 # React 18 + Vite + MapLibre GL  (ES modules)
 │  └─ src/

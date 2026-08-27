@@ -4,59 +4,103 @@ const crypto = require("crypto");
 const { ROLES, SERVICE_TYPES } = require("../constants");
 
 /**
- * seedData — ports the prototype's fictional Chandigarh cadastre (assets/data.js)
- * into canonical Land Stack documents, and adds the extra collections the full
- * stack needs (users, layer catalogue, mapping profile, geo-intel, certificates,
- * consent). Everything here is FICTIONAL demonstration data — not a real record.
+ * seedData — the fictional Prayagraj (Uttar Pradesh) demonstration cadastre,
+ * expressed as canonical Land Stack documents, plus the extra collections the
+ * full stack needs (users, layer catalogue, mapping profile, geo-intel,
+ * certificates, consent).
  *
- * The ULPIN and geometry generation is a faithful port of the prototype so the
- * seeded ULPINs match the ones shown in the static demo and its verify registry.
+ * Everything here is FICTIONAL demonstration data — not a real land record.
+ * Owner names, ULPINs, khasra numbers, deed numbers and coordinates are
+ * invented for a mock pilot in Prayagraj city.
  */
 
 // Demo password shared by every seeded account (documented in the README).
 const DEMO_PASSWORD = "landstack123";
 
-// --- Geometry constants (from assets/data.js) ------------------------------
-const BASE = { lng: 76.779, lat: 30.7305 };
+// ---------------------------------------------------------------------------
+// Geometry — irregular mohalla blocks (NOT a uniform grid)
+// ---------------------------------------------------------------------------
+// Parcels are laid out as four revenue blocks, each with its own origin, street
+// bearing and internal lane rhythm. Every plot then gets its own frontage,
+// depth, setback and skew, so the cadastre reads like a real settlement rather
+// than a chessboard of identical squares sitting side by side. All of it is
+// deterministic, so a re-seed always produces the same map.
+
+const BASE = { lng: 81.833, lat: 25.4545 }; // Civil Lines, Prayagraj
 const M_PER_DEG_LAT = 110900;
-const M_PER_DEG_LNG = 95700;
-const COLS = 4;
-const PW = 150;
-const PH = 130;
-const GAP_X = 55;
-const GAP_Y = 60;
+const M_PER_DEG_LNG = 100500; // at ~25.45°N
 
 const mToDegLng = (m) => m / M_PER_DEG_LNG;
 const mToDegLat = (m) => m / M_PER_DEG_LAT;
 
-// Deterministic pseudo-random jitter (identical to prototype).
+/**
+ * One entry per revenue block (mohalla).
+ *   code    — revenue village code used inside the ULPIN
+ *   x / y   — metre offset from BASE (east / north); roads fill the gaps
+ *   bearing — street angle in degrees, so blocks are not axis-aligned
+ *   cols    — plots along a frontage before the row wraps to the next lane
+ *   depth   — nominal plot depth for the block, varied per plot below
+ */
+const BLOCKS = {
+  "Civil Lines": { code: "0007", x: 0, y: 0, bearing: -7, cols: 2, depth: 62 },
+  Georgetown: { code: "0008", x: 335, y: -155, bearing: 12, cols: 2, depth: 54 },
+  "Tagore Town": { code: "0009", x: 85, y: -385, bearing: -3, cols: 2, depth: 50 },
+  Rajapur: { code: "0010", x: 470, y: -520, bearing: 8, cols: 3, depth: 56 },
+};
+
+// Deterministic pseudo-random value in -0.5..0.5.
 function jitter(seed) {
   const x = Math.sin(seed * 12.9898) * 43758.5453;
-  return x - Math.floor(x) - 0.5; // -0.5..0.5
+  return x - Math.floor(x) - 0.5;
 }
 
-// 4-char check group — identical to prototype checkBlock().
+// 4-char check group — self-checking ULPIN, validated offline (see utils/ulpin).
 function checkBlock(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
   return String(h % 10000).padStart(4, "0");
 }
 
-function makeUlpin(index) {
-  const district = "01"; // Chandigarh
-  const village = String(7 + Math.floor(index / 4)).padStart(4, "0");
+const STATE_CODE = "UP";
+const DISTRICT_CODE = "21"; // Prayagraj (demo code)
+
+function makeUlpin(index, villageCode) {
+  const village = String(villageCode || 7 + Math.floor(index / 4)).padStart(4, "0");
   const parcel = String(400 + index).padStart(4, "0");
-  const base = "CH-" + district + "-" + village + "-" + parcel;
-  return base + "-" + checkBlock(base);
+  const base = `${STATE_CODE}-${DISTRICT_CODE}-${village}-${parcel}`;
+  return `${base}-${checkBlock(base)}`;
 }
 
-// --- Prototype attribute records (verbatim) --------------------------------
+// Local area units used across Uttar Pradesh: 1 bigha = 20 biswa ≈ 2529 m².
+const SQM_PER_BIGHA = 2529;
+const SQM_PER_BISWA = SQM_PER_BIGHA / 20;
+
+function localArea(sqm) {
+  const bigha = Math.floor(sqm / SQM_PER_BIGHA);
+  const biswa = (sqm - bigha * SQM_PER_BIGHA) / SQM_PER_BISWA;
+  return bigha ? `${bigha} bigha ${biswa.toFixed(1)} biswa` : `${biswa.toFixed(1)} biswa`;
+}
+
+// Shoelace area of a closed local-metre polygon.
+function quadArea(pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % pts.length];
+    a += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(a / 2);
+}
+
+// ---------------------------------------------------------------------------
+// Attribute records — 12 fictional Prayagraj parcels
+// ---------------------------------------------------------------------------
 const RECORDS = [
   {
-    sector: "Sector 17-A", landUse: "Commercial", zoning: "C-1",
-    owners: [{ name: "Harpreet Singh Gill", share: "1/1" }],
-    area_local: "1.8 kanal", khasra: "217/2",
-    registration: { type: "Sale Deed", docNo: "CHD/2019/04421", date: "2019-06-14" },
+    block: "Civil Lines", landUse: "Commercial", zoning: "C-1",
+    owners: [{ name: "Rakesh Chandra Dwivedi", share: "1/1" }],
+    khasra: "217/2",
+    registration: { type: "Sale Deed", docNo: "PRJ/2019/04421", date: "2019-06-14" },
     mutationDate: "2019-07-02",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -64,10 +108,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-05-19",
   },
   {
-    sector: "Sector 17-A", landUse: "Commercial", zoning: "C-1",
-    owners: [{ name: "Meridian Retail Pvt. Ltd.", share: "1/1" }],
-    area_local: "2.4 kanal", khasra: "218",
-    registration: { type: "Sale Deed", docNo: "CHD/2021/09134", date: "2021-11-03" },
+    block: "Civil Lines", landUse: "Commercial", zoning: "C-1",
+    owners: [{ name: "Sangam Retail Pvt. Ltd.", share: "1/1" }],
+    khasra: "218",
+    registration: { type: "Sale Deed", docNo: "PRJ/2021/09134", date: "2021-11-03" },
     mutationDate: "2021-11-27",
     encumbrance: { status: "mortgage", detail: "Mortgage — Punjab National Bank (₹2.10 Cr)" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -75,10 +119,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-04-30",
   },
   {
-    sector: "Sector 18-B", landUse: "Residential", zoning: "R-2",
-    owners: [{ name: "Anjali Verma", share: "1/2" }, { name: "Rohit Verma", share: "1/2" }],
-    area_local: "10 marla", khasra: "77/1",
-    registration: { type: "Gift Deed", docNo: "CHD/2018/02210", date: "2018-02-21" },
+    block: "Georgetown", landUse: "Residential", zoning: "R-2",
+    owners: [{ name: "Anjali Mishra", share: "1/2" }, { name: "Rohit Mishra", share: "1/2" }],
+    khasra: "77/1",
+    registration: { type: "Gift Deed", docNo: "PRJ/2018/02210", date: "2018-02-21" },
     mutationDate: "2018-03-15",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "due", paidTill: "2024-25", due: 4820 },
@@ -86,10 +130,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-06-01",
   },
   {
-    sector: "Sector 18-B", landUse: "Residential", zoning: "R-2",
-    owners: [{ name: "Estate of Late Kartar Kaur", share: "disputed" }],
-    area_local: "14 marla", khasra: "77/2",
-    registration: { type: "Inheritance (under review)", docNo: "CHD/2023/00718", date: "2023-01-30" },
+    block: "Georgetown", landUse: "Residential", zoning: "R-2",
+    owners: [{ name: "Estate of Late Kamla Devi Pandey", share: "disputed" }],
+    khasra: "77/2",
+    registration: { type: "Inheritance (under review)", docNo: "PRJ/2023/00718", date: "2023-01-30" },
     mutationDate: "pending",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "due", paidTill: "2022-23", due: 11250 },
@@ -97,10 +141,10 @@ const RECORDS = [
     disputeRisk: "high", lastUpdated: "2026-07-22",
   },
   {
-    sector: "Sector 18-B", landUse: "Institutional", zoning: "PS-1",
-    owners: [{ name: "Chandigarh Education Society", share: "1/1" }],
-    area_local: "3.1 kanal", khasra: "80",
-    registration: { type: "Lease (99 yr)", docNo: "CHD/2005/01188", date: "2005-08-09" },
+    block: "Georgetown", landUse: "Institutional", zoning: "PS-1",
+    owners: [{ name: "Prayagraj Education Society", share: "1/1" }],
+    khasra: "80",
+    registration: { type: "Lease (99 yr)", docNo: "PRJ/2005/01188", date: "2005-08-09" },
     mutationDate: "2005-09-01",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "exempt", paidTill: "—", due: 0 },
@@ -108,10 +152,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-03-11",
   },
   {
-    sector: "Sector 19-C", landUse: "Residential", zoning: "R-3",
-    owners: [{ name: "Mohammed Irfan", share: "1/1" }],
-    area_local: "8 marla", khasra: "142/3",
-    registration: { type: "Sale Deed", docNo: "CHD/2022/05560", date: "2022-09-19" },
+    block: "Tagore Town", landUse: "Residential", zoning: "R-3",
+    owners: [{ name: "Mohammad Irfan Ansari", share: "1/1" }],
+    khasra: "142/3",
+    registration: { type: "Sale Deed", docNo: "PRJ/2022/05560", date: "2022-09-19" },
     mutationDate: "2022-10-08",
     encumbrance: { status: "mortgage", detail: "Mortgage — HDFC Bank (₹48.0 L)" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -119,10 +163,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-05-02",
   },
   {
-    sector: "Sector 19-C", landUse: "Mixed Use", zoning: "MU-1",
-    owners: [{ name: "Deepak Aggarwal", share: "2/3" }, { name: "Sunita Aggarwal", share: "1/3" }],
-    area_local: "1.2 kanal", khasra: "145",
-    registration: { type: "Sale Deed", docNo: "CHD/2020/07781", date: "2020-12-01" },
+    block: "Tagore Town", landUse: "Mixed Use", zoning: "MU-1",
+    owners: [{ name: "Deepak Agrawal", share: "2/3" }, { name: "Sunita Agrawal", share: "1/3" }],
+    khasra: "145",
+    registration: { type: "Sale Deed", docNo: "PRJ/2020/07781", date: "2020-12-01" },
     mutationDate: "2020-12-20",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -130,9 +174,9 @@ const RECORDS = [
     disputeRisk: "medium", lastUpdated: "2026-06-28",
   },
   {
-    sector: "Sector 19-C", landUse: "Park / Open Space", zoning: "OS",
-    owners: [{ name: "Municipal Corporation, Chandigarh", share: "1/1" }],
-    area_local: "5.0 kanal", khasra: "150",
+    block: "Tagore Town", landUse: "Park / Open Space", zoning: "OS",
+    owners: [{ name: "Nagar Nigam, Prayagraj", share: "1/1" }],
+    khasra: "150",
     registration: { type: "Government Land", docNo: "—", date: "—" },
     mutationDate: "—",
     encumbrance: { status: "clear", detail: "Public land — non-transferable" },
@@ -141,10 +185,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-02-04",
   },
   {
-    sector: "Sector 20-A", landUse: "Residential", zoning: "R-2",
-    owners: [{ name: "Priya Nair", share: "1/1" }],
-    area_local: "12 marla", khasra: "203/1",
-    registration: { type: "Sale Deed", docNo: "CHD/2024/01099", date: "2024-03-27" },
+    block: "Rajapur", landUse: "Residential", zoning: "R-2",
+    owners: [{ name: "Shalini Srivastava", share: "1/1" }],
+    khasra: "203/1",
+    registration: { type: "Sale Deed", docNo: "PRJ/2024/01099", date: "2024-03-27" },
     mutationDate: "2024-04-14",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -152,10 +196,10 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-06-30",
   },
   {
-    sector: "Sector 20-A", landUse: "Commercial", zoning: "C-2",
-    owners: [{ name: "Gurnam Singh", share: "1/1" }],
-    area_local: "1.5 kanal", khasra: "205",
-    registration: { type: "Sale Deed", docNo: "CHD/2017/03342", date: "2017-05-16" },
+    block: "Rajapur", landUse: "Commercial", zoning: "C-2",
+    owners: [{ name: "Vinod Kumar Kesarwani", share: "1/1" }],
+    khasra: "205",
+    registration: { type: "Sale Deed", docNo: "PRJ/2017/03342", date: "2017-05-16" },
     mutationDate: "2017-06-05",
     encumbrance: { status: "mortgage", detail: "Mortgage — State Bank of India (₹95.0 L)" },
     tax: { status: "due", paidTill: "2024-25", due: 7300 },
@@ -163,10 +207,10 @@ const RECORDS = [
     disputeRisk: "medium", lastUpdated: "2026-05-25",
   },
   {
-    sector: "Sector 20-A", landUse: "Residential", zoning: "R-3",
-    owners: [{ name: "Farida Begum", share: "1/1" }],
-    area_local: "6 marla", khasra: "209/4",
-    registration: { type: "Sale Deed", docNo: "CHD/2023/06620", date: "2023-08-11" },
+    block: "Rajapur", landUse: "Residential", zoning: "R-3",
+    owners: [{ name: "Farida Bano", share: "1/1" }],
+    khasra: "209/4",
+    registration: { type: "Sale Deed", docNo: "PRJ/2023/06620", date: "2023-08-11" },
     mutationDate: "2023-09-01",
     encumbrance: { status: "clear", detail: "No active charge" },
     tax: { status: "paid", paidTill: "2025-26", due: 0 },
@@ -174,9 +218,9 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-07-05",
   },
   {
-    sector: "Sector 20-A", landUse: "Institutional", zoning: "PS-2",
-    owners: [{ name: "Directorate of Health Services", share: "1/1" }],
-    area_local: "4.2 kanal", khasra: "212",
+    block: "Rajapur", landUse: "Institutional", zoning: "PS-2",
+    owners: [{ name: "Directorate of Health Services, Uttar Pradesh", share: "1/1" }],
+    khasra: "212",
     registration: { type: "Government Land", docNo: "—", date: "—" },
     mutationDate: "—",
     encumbrance: { status: "clear", detail: "Public land — non-transferable" },
@@ -185,6 +229,77 @@ const RECORDS = [
     disputeRisk: "low", lastUpdated: "2026-01-18",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Layout — one pass over RECORDS, grouped by block
+// ---------------------------------------------------------------------------
+function buildLayout() {
+  const shapes = new Array(RECORDS.length);
+
+  const groups = new Map();
+  RECORDS.forEach((rec, i) => {
+    if (!groups.has(rec.block)) groups.set(rec.block, []);
+    groups.get(rec.block).push(i);
+  });
+
+  for (const [name, idxs] of groups) {
+    const b = BLOCKS[name];
+    const th = (b.bearing * Math.PI) / 180;
+    const cos = Math.cos(th);
+    const sin = Math.sin(th);
+
+    // Local block coordinates -> WGS84.
+    const place = ([x, y]) => [
+      BASE.lng + mToDegLng(b.x + x * cos - y * sin),
+      BASE.lat + mToDegLat(b.y + x * sin + y * cos),
+    ];
+
+    let cursor = 0; // distance travelled along the current frontage
+    let lane = 0; // which row of plots inside the block
+    let col = 0;
+
+    for (const i of idxs) {
+      if (col === b.cols) {
+        col = 0;
+        cursor = 0;
+        lane += 1;
+      }
+
+      const front = Math.round(34 + Math.abs(jitter(i + 1)) * 62); // 34..96 m
+      const depth = Math.round(b.depth * (0.84 + Math.abs(jitter(i + 4)) * 0.42));
+      const setback = jitter(i + 6) * 9; // plots do not share a building line
+      const skew = jitter(i + 9) * 9; // rear boundary slides, so edges are not parallel
+
+      const yFront = -lane * (b.depth + 20) + setback;
+      const yRear = yFront - depth;
+
+      const pts = [
+        [cursor, yFront],
+        [cursor + front, yFront + jitter(i + 12) * 4],
+        [cursor + front + skew, yRear],
+        [cursor + skew * 0.4, yRear + jitter(i + 15) * 5],
+      ];
+
+      const ring = pts.map(place);
+      ring.push(ring[0]);
+
+      shapes[i] = {
+        ring,
+        areaSqm: Math.round(quadArea(pts)),
+        centroid: [
+          (ring[0][0] + ring[1][0] + ring[2][0] + ring[3][0]) / 4,
+          (ring[0][1] + ring[1][1] + ring[2][1] + ring[3][1]) / 4,
+        ],
+        villageCode: b.code,
+      };
+
+      cursor += front + 8 + Math.abs(jitter(i + 18)) * 8; // gully between plots
+      col += 1;
+    }
+  }
+
+  return shapes;
+}
 
 // --- Mapping helpers -------------------------------------------------------
 function mapEncumbranceStatus(s) {
@@ -206,35 +321,9 @@ function parcelStatus(rec) {
   return "active";
 }
 
-// Build one canonical parcel document from a prototype record + index.
-function buildParcel(rec, i) {
-  const col = i % COLS;
-  const row = Math.floor(i / COLS);
-
-  const originLng = BASE.lng + mToDegLng(col * (PW + GAP_X));
-  const originLat = BASE.lat + mToDegLat(row * (PH + GAP_Y));
-
-  const w = mToDegLng(PW);
-  const h = mToDegLat(PH);
-  const jx = mToDegLng(9);
-  const jy = mToDegLat(9);
-
-  const ring = [
-    [originLng + jitter(i + 1) * jx, originLat + jitter(i + 2) * jy],
-    [originLng + w + jitter(i + 3) * jx, originLat + jitter(i + 4) * jy],
-    [originLng + w + jitter(i + 5) * jx, originLat + h + jitter(i + 6) * jy],
-    [originLng + jitter(i + 7) * jx, originLat + h + jitter(i + 8) * jy],
-  ];
-  ring.push(ring[0]);
-
-  const areaSqm = Math.round(PW * PH * (0.9 + Math.abs(jitter(i)) * 0.2));
-  const centroid = [
-    (ring[0][0] + ring[1][0] + ring[2][0] + ring[3][0]) / 4,
-    (ring[0][1] + ring[1][1] + ring[2][1] + ring[3][1]) / 4,
-  ];
-
-  const ulpin = makeUlpin(i);
-  const villageCode = String(7 + Math.floor(i / 4)).padStart(4, "0");
+// Build one canonical parcel document from a record + its generated shape.
+function buildParcel(rec, i, shape) {
+  const ulpin = makeUlpin(i, shape.villageCode);
   const parcelCode = String(400 + i).padStart(4, "0");
 
   const legacyIds = [{ type: "khasra", value: rec.khasra }];
@@ -244,16 +333,16 @@ function buildParcel(rec, i) {
 
   return {
     ulpin,
-    state: "Chandigarh (UT)",
-    district: "Chandigarh",
-    revenueUnit: rec.sector,
-    village: "RE-" + villageCode,
-    sector: rec.sector,
+    state: "Uttar Pradesh",
+    district: "Prayagraj",
+    revenueUnit: rec.block,
+    village: "RE-" + shape.villageCode,
+    sector: rec.block,
     landUse: rec.landUse,
-    geometry: { type: "Polygon", coordinates: [ring] },
-    centroid: { type: "Point", coordinates: centroid },
+    geometry: { type: "Polygon", coordinates: [shape.ring] },
+    centroid: { type: "Point", coordinates: shape.centroid },
     crs: "EPSG:4326",
-    area: { value: areaSqm, unit: "sqm", local: rec.area_local },
+    area: { value: shape.areaSqm, unit: "sqm", local: localArea(shape.areaSqm) },
     owners: rec.owners,
     legacyIds,
     lineage: {
@@ -272,12 +361,12 @@ function buildParcel(rec, i) {
         type: rec.registration.type,
         docNo: rec.registration.docNo,
         date: rec.registration.date,
-        subRegistrarOffice: "Sub-Registrar Office, Chandigarh (UT)",
+        subRegistrarOffice: "Sub-Registrar Office, Prayagraj Sadar",
       },
       zoning: {
         code: rec.zoning,
         description: rec.landUse,
-        masterPlan: "Chandigarh Master Plan 2031",
+        masterPlan: "Prayagraj Master Plan 2031",
       },
       encumbrance: {
         status: mapEncumbranceStatus(rec.encumbrance.status),
@@ -299,7 +388,7 @@ function buildParcel(rec, i) {
 // --- Static reference collections ------------------------------------------
 const USERS = [
   { email: "citizen@landstack.in", name: "Asha Sharma", role: ROLES.CITIZEN },
-  { email: "patwari@landstack.in", name: "R. Kumar (Patwari)", role: ROLES.PATWARI },
+  { email: "patwari@landstack.in", name: "R. Kumar (Lekhpal)", role: ROLES.PATWARI },
   { email: "registrar@landstack.in", name: "S. Rao (Sub-Registrar)", role: ROLES.SUB_REGISTRAR },
   { email: "planner@landstack.in", name: "P. Mehta (Town Planner)", role: ROLES.PLANNER },
   { email: "tax@landstack.in", name: "T. Singh (Tax Officer)", role: ROLES.TAX_OFFICER },
@@ -346,8 +435,8 @@ const LAYER_CATALOGUE = [
 
 const MAPPING_PROFILES = [
   {
-    key: "chandigarh-legacy-ror",
-    sourceName: "Chandigarh legacy RoR export",
+    key: "up-legacy-ror",
+    sourceName: "Uttar Pradesh legacy RoR export",
     sourceSystem: "State revenue CSV (pre-DPI)",
     description:
       "Maps a state's legacy record-of-rights export columns onto the canonical Land Stack parcel schema (M6 / FR-06).",
@@ -365,10 +454,10 @@ const MAPPING_PROFILES = [
     ],
     sampleIn: {
       khasra_no: " 217/2 ",
-      owner_name: " Harpreet Singh Gill ",
+      owner_name: " Rakesh Chandra Dwivedi ",
       share: "1/1",
       deed_type: "Sale Deed",
-      deed_no: "chd/2019/04421",
+      deed_no: "prj/2019/04421",
       reg_date: "14-06-2019",
       mutation_dt: "02-07-2019",
       land_use: "Commercial",
@@ -377,10 +466,10 @@ const MAPPING_PROFILES = [
     },
     sampleOut: {
       landUse: "Commercial",
-      owners: [{ name: "Harpreet Singh Gill", share: "1/1" }],
+      owners: [{ name: "Rakesh Chandra Dwivedi", share: "1/1" }],
       layers: {
         ror: { khasraNo: "217/2", mutationDate: "2019-07-02" },
-        registration: { type: "Sale Deed", docNo: "CHD/2019/04421", date: "2019-06-14" },
+        registration: { type: "Sale Deed", docNo: "PRJ/2019/04421", date: "2019-06-14" },
         zoning: { code: "C-1" },
         tax: { due: 0 },
       },
@@ -428,7 +517,8 @@ function buildGeoIntel(parcels) {
 }
 
 function buildCertificates(parcels) {
-  const mk = (recordId, idx, issuedAt, issuedTo) => {
+  // issuedTo is derived from the parcel, so it can never drift from the owner.
+  const mk = (recordId, idx, issuedAt) => {
     const p = parcels[idx];
     const snapshot = {
       ulpin: p.ulpin,
@@ -444,17 +534,17 @@ function buildCertificates(parcels) {
       ulpin: p.ulpin,
       kind: "ror_extract",
       issuedAt: new Date(issuedAt),
-      issuedTo,
+      issuedTo: p.owners[0].name,
       issuedByRole: ROLES.SUB_REGISTRAR,
       snapshot,
       hash: hashSnapshot(snapshot),
       revoked: false,
     };
   };
-  // IDs match the prototype's pre-seeded verify registry.
+  // Pre-seeded record IDs used by the "verify a certificate" demo.
   return [
-    mk("LS-VER-7F3A9C2E", 0, "2026-08-20T10:14:00+05:30", "Harpreet Singh Gill"),
-    mk("LS-VER-1B8D4402", 8, "2026-08-22T16:42:00+05:30", "Priya Nair"),
+    mk("LS-VER-7F3A9C2E", 0, "2026-08-20T10:14:00+05:30"),
+    mk("LS-VER-1B8D4402", 8, "2026-08-22T16:42:00+05:30"),
   ];
 }
 
@@ -481,10 +571,10 @@ function buildServiceRequests(parcels) {
       requestId: "LS-SR-DEMO0001",
       type: SERVICE_TYPES.MUTATION,
       ulpin: parcels[3].ulpin,
-      applicant: { name: "Rupinder Kaur", email: "rupinder@example.in", phone: "+91-98xxxxxx01" },
+      applicant: { name: "Sarita Pandey", email: "sarita@example.in", phone: "+91-98xxxxxx01" },
       payload: {
         reason: "Transmission on inheritance",
-        incomingOwners: [{ name: "Rupinder Kaur", share: "1/1" }],
+        incomingOwners: [{ name: "Sarita Pandey", share: "1/1" }],
         supportingDocs: ["succession_certificate.pdf"],
       },
       status: "under_review",
@@ -501,7 +591,8 @@ function buildServiceRequests(parcels) {
 
 // --- Public builder --------------------------------------------------------
 function buildSeedData() {
-  const parcels = RECORDS.map(buildParcel);
+  const shapes = buildLayout();
+  const parcels = RECORDS.map((rec, i) => buildParcel(rec, i, shapes[i]));
   return {
     parcels,
     users: USERS,
