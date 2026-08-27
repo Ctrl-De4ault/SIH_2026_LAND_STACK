@@ -48,6 +48,13 @@ npm run build           # production build of the client
 The Vite dev server proxies `/v1`, `/health` and `/geoserver` to the API on `:8080`, so the client talks to the API with no CORS setup.
 </details>
 
+### C. Deploy it online (free tier)
+
+To put the full stack on the internet — database, API and frontend — follow
+**[`DEPLOYMENT.md`](DEPLOYMENT.md)**. It walks through MongoDB Atlas (free M0) + Render
+(backend) + Vercel (frontend), using the included `render.yaml` and `vercel.json`, with no
+application code changes.
+
 ---
 
 ## What you can do
@@ -123,7 +130,10 @@ SIH2026/
 │
 ├─ index.html + assets/    # the zero-backend static demo (option A)
 ├─ Land-Stack-PRD.html     # Standard Technical Document / PRD
-└─ DEPLOY.md               # GitHub push + Pages deploy guide (static demo)
+├─ DEPLOYMENT.md           # full-stack deploy: Atlas + Render + Vercel (free tier)
+├─ vercel.json             # frontend build + API proxy rewrites (Vercel)
+├─ render.yaml             # backend web-service blueprint (Render)
+└─ DEPLOY.md               # GitHub push + Pages deploy guide (static demo only)
 ```
 
 **Backend modules (per the PRD):** M1 parcel service · M2 ULPIN registry · M3 layer catalogue · M4 OGC + OpenAPI · M5 consent · M6 schema mapping · M7 service requests · M8 mutation workflow · M9 geo-intelligence. Cross-cutting: FR-07 verifiable certificates, FR-10 immutable audit, FR-11 workflow auto-apply, FR-13 change detection, FR-14 dispute-risk scoring.

@@ -1,0 +1,37 @@
+# Render Blueprint for the Land Stack API (backend).
+# In Render: New +  ->  Blueprint  ->  connect this repo. Render reads this file,
+# creates the free web service below, and asks you to fill the "sync: false" secrets.
+#
+# The service runs the server EXACTLY like `npm start` does locally:
+#   connect to MongoDB (Atlas)  ->  auto-seed demo data if empty  ->  listen on $PORT
+# Render provides PORT automatically; the app reads process.env.PORT.
+services:
+  - type: web
+    name: landstack-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # REQUIRED — paste your MongoDB Atlas connection string (includes user + password).
+      # Example: mongodb+srv://landstack:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+      - key: MONGODB_URI
+        sync: false
+      # Auto-generated strong secret for signing JWTs (no need to invent one).
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_NAME
+        value: landstack
+      - key: AUTO_SEED
+        value: "true"
+      - key: NODE_ENV
+        value: production
+      # OPTIONAL — only needed if a browser calls this API directly (cross-origin).
+      # With the Vercel rewrite proxy, requests are same-origin, so CORS never triggers
+      # and you can leave this unset. If set, use your Vercel URL, e.g.
+      # https://landstack.vercel.app
+      - key: CLIENT_ORIGIN
+        sync: false

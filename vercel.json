@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm --prefix client install",
+  "buildCommand": "npm --prefix client run build",
+  "outputDirectory": "client/dist",
+  "rewrites": [
+    { "source": "/v1/:path*", "destination": "https://landstack-api.onrender.com/v1/:path*" },
+    { "source": "/geoserver/:path*", "destination": "https://landstack-api.onrender.com/geoserver/:path*" },
+    { "source": "/health", "destination": "https://landstack-api.onrender.com/health" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
+}
